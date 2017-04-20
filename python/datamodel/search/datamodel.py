@@ -1,6 +1,5 @@
 '''
 Created on Oct 20, 2016
-
 @author: Rohan Achar
 '''
 from __future__ import absolute_import
@@ -101,7 +100,7 @@ class Link(object):
     @domain.setter
     def domain(self, value): self._domain = value
 
-    @dimension(str)
+    @dimension(list)
     def downloaded_by(self): return self._downloaded_by
 
     @downloaded_by.setter
@@ -209,9 +208,15 @@ class Link(object):
         self.download_complete = True
         return UrlResponse(self, self.full_url, self.raw_content, "", self.http_code, self.http_headers, self.is_redirected, self.final_url), True
 
+    def __init__(self, produced_link):
+        self.url = produced_link.url
+        self.scheme = produced_link.scheme
+        self.domain = produced_link.domain
+        self.first_detected_by = produced_link.detected_by
+
     def download(self, useragentstring, timeout = 2, MaxPageSize = 1048576, MaxRetryDownloadOnFail = 5, retry_count = 0):
         self.isprocessed = True
-        self.downloaded_by = useragentstring
+        self.downloaded_by = list(set(self.downloaded_by).add(set([useragentstring])))
         url = self.full_url
         if self.raw_content != None:
             print ("Downloading " + url + " from cache.")
@@ -286,8 +291,38 @@ class LinkMarkedBad(object):
     def __predicate__(l):
         return len(l.bad_url) > 0
 
-@projection(Link, Link.url, Link.scheme, Link.domain, Link.first_detected_by)
+@pcc_set
 class ProducedLink(object):
+    @primarykey(str)
+    def oid(self): self._oid
+
+    @oid.setter
+    def oid(self, v): self._oid = v
+    
+    @dimension(str)
+    def url(self): return self._url
+
+    @url.setter
+    def url(self, value): self._url = value
+
+    @dimension(str)
+    def scheme(self): return self._scheme
+
+    @scheme.setter
+    def scheme(self, value): self._scheme = value
+
+    @dimension(str)
+    def domain(self): return self._domain
+
+    @domain.setter
+    def domain(self, value): self._domain = value
+
+    @dimension(list)
+    def detected_by(self): return self._fdb
+
+    @detected_by.setter
+    def detected_by(self, value): self._fdb = value
+
     @property
     def full_url(self): return self.scheme + "://" + self.url
     
@@ -300,7 +335,7 @@ class ProducedLink(object):
         self.url = pd.netloc + path + (("?" + pd.query) if pd.query else "")
         self.scheme = pd.scheme
         self.domain = pd.hostname
-        self.first_detected_by = first_detected_by
+        self.detected_by = first_detected_by
     
 @subset(Link)
 class NewLink(object):
@@ -457,5 +492,4 @@ class Release(object):
     def oid(self): return self._oid
 
     @oid.setter
-    def oid(self, v): self._oid = v
-
+def oid(self, v): self._oid = v
