@@ -27,7 +27,7 @@ class Simulation(object):
         '''
         Constructor
         '''
-        frame_c = frame(address = "http://127.0.0.1:12000", time_step = timeout)
+        frame_c = frame(address = "http://127.0.0.1:9050", time_step = timeout)
         frame_c.attach_app(CrawlerFrame(frame_c, name, useragent))
 
         frame_c.run_async()

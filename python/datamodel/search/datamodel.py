@@ -492,4 +492,4 @@ class Release(object):
     def oid(self): return self._oid
 
     @oid.setter
-def oid(self, v): self._oid = v
+    def oid(self, v): self._oid = v

@@ -29,15 +29,15 @@ class Simulation(object):
         '''
         Constructor
         '''
-        frame_lb = frame(address = "http://127.0.0.1:12000", time_step = 1000)
+        frame_lb = frame(address = "http://127.0.0.1:9050", time_step = 1000)
         frame_lb.attach_app(LoadBalancer(frame_lb))
-        frame_lv = frame(address = "http://127.0.0.1:12000", time_step = 1000)
+        frame_lv = frame(address = "http://127.0.0.1:9050", time_step = 1000)
         frame_lv.attach_app(LinkValidator(frame_lv))
-        frame_nlg = frame(address = "http://127.0.0.1:12000", time_step = 1000)
+        frame_nlg = frame(address = "http://127.0.0.1:9050", time_step = 1000)
         frame_nlg.attach_app(NewLinkGenerator(frame_nlg))
-        frame_ds = frame(address = "http://127.0.0.1:12000", time_step = 1000)
+        frame_ds = frame(address = "http://127.0.0.1:9050", time_step = 1000)
         frame_ds.attach_app(DownloadedSaver(frame_ds))
-        frame_buf = frame(address = "http://127.0.0.1:12000", time_step = 1000)
+        frame_buf = frame(address = "http://127.0.0.1:9050", time_step = 1000)
         frame_buf.attach_app(BadUrlFilter(frame_buf))
         
         frame_lb.run_async()

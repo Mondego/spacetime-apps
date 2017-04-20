@@ -35,8 +35,9 @@ class NewLinkGenerator(IApplication):
     def update(self):
         produced_links = self.frame.get_new(ProducedLink)
         strtime = strftime("%a, %d %b %Y %H:%M:%S", localtime())
-        self.logfile.write("\n".join(["||".join(strtime, l.full_url, l.downloaded_by) for l in produced_links]) + "\n")
-        for l in ProducedLink:
+        if len(produced_links) > 0:
+            self.logfile.write("\n".join(["||".join([strtime, l.full_url, l.detected_by]) for l in produced_links]) + "\n")
+        for l in produced_links:
             self.frame.add(Link(l))
             self.frame.delete(ProducedLink, l)
 
