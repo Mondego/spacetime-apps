@@ -1,5 +1,6 @@
 import time
 import sys
+import spacetime
 from rtypes import pcc_set, dimension, primarykey
 from spacetime import Application
 from datamodel import Player, Mark
@@ -8,56 +9,115 @@ def my_print(*args):
 	print(*args)
 	sys.stdout.flush()
 
-WAIT_FOR_START = 10.0
+WAIT_FOR_START = 5
 
-def wait_for_players(dataframe):
-	players = list()
-	start = time.time()
-	while (time.time() - start) < WAIT_FOR_START:
-		my_print ("\rWaiting for %d " % (int(WAIT_FOR_START - (time.time() - start)),), "Seconds for clients to connect.")
-		time.sleep(1)
+class Game(object):
+	def __init__(self, df):
+		self.dataframe = df
+		self.board = [[" ", " ", " "], [" ", " ", " "], [" ", " ", " "]]
+		self.mark_count = 0
+		self.current_players = []
 
-	dataframe.checkout()
-	players = dataframe.read_all(Player)
-	if not players:
-		my_print ("No players connected, the game cannot continue. Exiting")
-		return False
-	my_print("Starting game with %d players" % len(players))
-	for pid, player in enumerate(players):
-		player.player_id = pid
-	players[0].ready = True
-	dataframe.commit()
-	return True
+	def wait_for_players(self):
+		# Delete the previous players and left over marks
+		for p in self.current_players:
+			self.dataframe.delete_one(Player, p)
+		self.dataframe.delete_all(Mark)
 
-def wait_for_marks(dataframe):
-	ITERS_TO_QUIT = 10
-	n_tries = 0
-	while True:
-		marks = dataframe.read_all(Mark)
-		if (len(marks) == 0):
-			n_tries = n_tries + 1
-			if n_tries < ITERS_TO_QUIT:
-				yield None
+		no_players = True
+		while self.dataframe.sync() and no_players:
+			players = self.dataframe.read_all(Player)
+			if len(players) < 2:
+				time.sleep(1)
+				continue
+			# take just the first 2
+			my_print("%d players joined. Taking the first 2." % len(players))
+			self.current_players = [players[0], players[1]]
+			for pid, player in enumerate(self.current_players):
+				player.player_id = pid
+			self.current_players[0].ready = True
+			no_players = False
+			self.reset_game()
+			return True
+
+	def wait_for_marks(self):
+		ITERS_TO_QUIT = 10
+		n_tries = 0
+		while True:
+			marks = self.dataframe.read_all(Mark)
+			if (len(marks) == 0):
+				n_tries = n_tries + 1
+				if n_tries < ITERS_TO_QUIT:
+					yield None
+				else:
+					yield marks
 			else:
+				n_tries = 0
 				yield marks
-		else:
-			n_tries = 0
-			yield marks
 
-def stop_game(players, winner):
-	#players = dataframe.read_all(Player)
-	for pid, player in enumerate(players):
-		player.done = True
-	if winner >= 0:
-		players[winner].winner = True
+	def stop_game(self, players, winner):
+		#players = dataframe.read_all(Player)
+		for pid, player in enumerate(self.current_players):
+			player.done = True
+		if winner >= 0:
+			self.current_players[winner].winner = True
+
+	def reset_game(self):
+		self.mark_count = 0
+		for x in range(3):
+			for y in range(3):
+				self.board[x][y] = " "
+
+	def enforce(self, mark):
+		if self.board[mark.x][mark.y] == " ":
+			self.board[mark.x][mark.y] = mark.player_id
+			self.mark_count += 1
+			# Check if the payer won
+		else:
+			my_print("Mark %d-%d sent by %d rejected" % (mark.x, mark.y, mark.player_id))
+			mark.rejected = True
+		return (self.mark_count == 9)
+
+	# Returns (game_over, winner)
+	def check_game_over(self):
+		# Check rows
+		for row in self.board:
+			if row[0] != " " and row[0] == row[1] == row[2]:
+				# We have a winner!
+				my_print("Winner %s in row %d" % (row[0], self.board.index(row)))
+				return True, int(row[0])
+		# Check columns
+		for col in range(3):
+			if self.board[col][0] != " " and self.board[col][0] == self.board[col][1] == self.board[col][2]:
+				# We have a winner!
+				my_print("Winner %s in col %d" % (self.board[col][0], col))
+				return True, int(self.board[col][0])
+		# Check diagonals
+		if self.board[1][1] != " ":
+			if self.board[0][0] == self.board[1][1] == self.board[2][2] or self.board[2][0] == self.board[1][1] == self.board[0][2]:
+				# We have a winner!
+				my_print("Winner %s in diag" % self.board[1][1])
+				return True, int(self.board[1][1])
+		# Is there a tie?
+		if self.mark_count == 9:
+			return True, -1
+		# All other cases
+		return False, -1
+
+	def render(self):
+		my_print(" ")
+		for row in range(3):
+			my_print (" | ".join(str(s) for s in self.board[row]))
+			my_print ("--+---+--") if row < 2 else None
 
 def ttt_server(dataframe):
-	if wait_for_players(dataframe):
+	game = Game(dataframe)
+	while game.wait_for_players():
 		# Players joined, start the game
 		players = dataframe.read_all(Player)
 		game_over = False
 		turn = 0
-		wait_step = wait_for_marks(dataframe)
+		wait_step = game.wait_for_marks()
 
 		while dataframe.sync() and not game_over:
 			marks = next(wait_step)
@@ -66,18 +126,18 @@ def ttt_server(dataframe):
 				continue
 			elif len(marks) == 0:
 				# Game over, no one placed a mark
-				stop_game(players, -1)
+				game.stop_game(players, -1)
 				break
 
 			# Take only the valid mark(s)
 			marks = [m for m in marks if not m.rejected]
 			if (len(marks) > 0):
-				enforce(marks[0])
-				render()
-				game_over, winner = check_game_over()
+				game.enforce(marks[0])
+				game.render()
+				game_over, winner = game.check_game_over()
 
 				if game_over:
-					stop_game(players, winner)
+					game.stop_game(players, winner)
 				elif not marks[0].rejected:
 					dataframe.delete_one(Mark, marks[0])
 
@@ -87,59 +147,12 @@ def ttt_server(dataframe):
 
 			time.sleep(1)
 
-	my_print ("game ended, waiting 5 secs for clients to disconnect")
-	time.sleep(5)
+		my_print ("GAME OVER")
+		time.sleep(WAIT_FOR_START)
 
-board = [[" ", " ", " "], 
-		 [" ", " ", " "], 
-		 [" ", " ", " "]]
-mark_count = 0
-
-def enforce(mark):
-	global mark_count
-	if board[mark.x][mark.y] == " ":
-		board[mark.x][mark.y] = mark.player_id
-		mark_count += 1
-		# Check if the payer won
-	else:
-		my_print("Mark %d-%d sent by %d rejected" % (mark.x, mark.y, mark.player_id))
-		mark.rejected = True
-	return (mark_count == 9)
-
-# Returns (game_over, winner)
-def check_game_over():
-	# Check rows
-	for row in board:
-		if row[0] != " " and row[0] == row[1] == row[2]:
-			# We have a winner!
-			my_print("Winner %s in row %d" % (row[0], board.index(row)))
-			return True, int(row[0])
-	# Check columns
-	for col in range(3):
-		if board[col][0] != " " and board[col][0] == board[col][1] == board[col][2]:
-			# We have a winner!
-			my_print("Winner %s in col %d" % (board[col][0], col))
-			return True, int(board[col][0])
-	# Check diagonals
-	if board[1][1] != " ":
-		if board[0][0] == board[1][1] == board[2][2] or board[2][0] == board[1][1] == board[0][2]:
-			# We have a winner!
-			my_print("Winner %s in diag" % board[1][1])
-			return True, int(board[1][1])
-	# Is there a tie?
-	if mark_count == 9:
-		return True, -1
-	# All other cases
-	return False, -1
-
-def render():
-	my_print(" ")
-	for row in range(3):
-		my_print (" | ".join(str(s) for s in board[row]))
-		my_print ("--+---+--") if row < 2 else None
 
 def main(port):
-    server = Application(ttt_server, server_port=port, Types=[Player, Mark])
+    server = Application(ttt_server, server_port=port, Types=[Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
     server.start()
 
 if __name__ == "__main__":

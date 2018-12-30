@@ -1,5 +1,6 @@
 import sys
 import time
+import spacetime
 from spacetime import Application
 from datamodel import Player, Mark
 
@@ -58,6 +59,6 @@ def player(dataframe):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    player_client = Application(player, dataframe=("127.0.0.1", port), Producer=[Player, Mark], GetterSetter=[Player], Getter=[Mark], Deleter=[Mark])
+    player_client = Application(player, dataframe=("127.0.0.1", port), Types=[Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
     player_client.start()
 
