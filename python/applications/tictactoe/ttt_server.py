@@ -66,7 +66,7 @@ def ttt_server(dataframe):
 				continue
 			elif len(marks) == 0:
 				# Game over, no one placed a mark
-				stop_game(dataframe.read_all(Player), -1)
+				stop_game(players, -1)
 				break
 
 			# Take only the valid mark(s)
@@ -77,7 +77,7 @@ def ttt_server(dataframe):
 				game_over, winner = check_game_over()
 
 				if game_over:
-					stop_game(dataframe.read_all(Player), winner)
+					stop_game(players, winner)
 				elif not marks[0].rejected:
 					dataframe.delete_one(Mark, marks[0])
 
