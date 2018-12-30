@@ -5,6 +5,7 @@ from spacetime import Application
 from datamodel import Player, Mark
 import pygame
 from pygame.locals import *
+import pygame.freetype
 
 def my_print(*args):
 	print(*args)
@@ -44,30 +45,67 @@ class MarkSprite(pygame.sprite.Sprite):
 			self.image = pygame.image.load("images/one-bad.png")
 		self.is_bad = True
 
+class InfoBar(object):
+	def __init__(self, screen):
+		self.font = pygame.freetype.SysFont(pygame.freetype.get_default_font(), 30)
+		self.screen = screen
+
+	def display(self, message):
+		self.font.render_to(self.screen, (20, 510), message, (20, 20, 20))
 
 class Visualizer(object):
 	def __init__(self):
 		pygame.init()
 		self.clock = pygame.time.Clock()
 		self.width = 512
-		self.height = 512
-		"""Create the Screen"""
+		self.height = 562
 		self.screen = pygame.display.set_mode((self.width, self.height))
 
 		self.background = GridSprite()
 		self.marks = []
+		self.info = InfoBar(self.screen)
 
-	def update(self, marks):
+	def update(self, marks, players):
 		self.clock.tick(60)
 		self.screen.fill((255,255,255))
 		self.screen.blit(self.background.image, self.background.rect)
 		pygame.event.get()
 
+		# Check what happened with players
+		if self.manage_players(players):
+			del self.marks[:]
+
+		# Check what happened with marks
 		self.manage_marks(marks)
 		for m in self.marks:
 			self.screen.blit(m.image, m.rect) 
 
 		pygame.display.update()
+
+	def manage_players(self, players):
+		reset = False
+		if len(players) == 0:
+			message = "Waiting for players to join..."
+			reset = True
+
+		if len(players) == 1:
+			message = "One player joined. Waiting..."
+
+		if len(players) == 2:
+			# Is the game over?
+			if players[0].done and players[1].done:
+				# Who's the winner?
+				if players[0].winner:
+					message = "{0} WINS!".format(players[0].player_name)
+				elif players[1].winner:
+					message = "{0} WINS!".format(players[1].player_name)
+				else:
+					message = "IT'S A TIE!"
+			else:
+				message = "{0}: {1}    {2}: {3}".format(players[0].player_id, players[0].player_name, players[1].player_id, players[1].player_name)
+
+		self.info.display(message)
+		return reset
 
 	def manage_marks(self, marks):
 		repeated = []
@@ -92,7 +130,8 @@ def visualize(dataframe):
 	while dataframe.sync() and not done:
 		time.sleep(0.250)
 		marks = dataframe.read_all(Mark)
-		vis.update(marks)
+		players = dataframe.read_all(Player)
+		vis.update(marks, players)
 
 
 if __name__ == "__main__":

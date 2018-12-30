@@ -88,10 +88,10 @@ class Game(object):
 				return True, int(row[0])
 		# Check columns
 		for col in range(3):
-			if self.board[col][0] != " " and self.board[col][0] == self.board[col][1] == self.board[col][2]:
+			if self.board[0][col] != " " and self.board[0][col] == self.board[1][col] == self.board[2][col]:
 				# We have a winner!
-				my_print("Winner %s in col %d" % (self.board[col][0], col))
-				return True, int(self.board[col][0])
+				my_print("Winner %s in col %d" % (self.board[0][col], col))
+				return True, int(self.board[0][col])
 		# Check diagonals
 		if self.board[1][1] != " ":
 			if self.board[0][0] == self.board[1][1] == self.board[2][2] or self.board[2][0] == self.board[1][1] == self.board[0][2]:

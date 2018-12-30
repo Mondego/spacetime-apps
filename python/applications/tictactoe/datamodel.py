@@ -10,12 +10,14 @@ def my_print(*args):
 class Player(object):
 	oid = primarykey(str)
 	player_id = dimension(int)
+	player_name = dimension(str)
 	ready = dimension(bool)
 	winner = dimension(bool)
 	done = dimension(bool)
 
-	def __init__(self):
+	def __init__(self, name):
 		self.oid = str(uuid.uuid4())
+		self.player_name = name
 		self.ready = False
 		self.done = False
 		# Local, non-shared data

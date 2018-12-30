@@ -1,5 +1,5 @@
 import sys
-import time
+import time, random
 import spacetime
 from spacetime import Application
 from datamodel import Player, Mark
@@ -9,8 +9,9 @@ def my_print(*args):
 	sys.stdout.flush()
 
 def player(dataframe):
-    my_player = Player()
+    my_player = Player("Team-{0}". format(random.randint(0,500)))
     dataframe.add_one(Player, my_player)
+    my_print("Player name: %s" % my_player.player_name)
 
     while dataframe.sync() and not my_player.ready:
         time.sleep(1)
