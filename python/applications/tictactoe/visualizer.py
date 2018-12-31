@@ -11,6 +11,9 @@ def my_print(*args):
 	print(*args)
 	sys.stdout.flush()
 
+def clip(s):
+	return s[0:8]
+
 class GridSprite(pygame.sprite.Sprite):
 	def __init__(self):
 		pygame.sprite.Sprite.__init__(self)  #call Sprite initializer
@@ -100,15 +103,15 @@ class Visualizer(object):
 			if players[0].done and players[1].done:
 				# Who's the winner?
 				if players[0].winner:
-					message = "{0} WINS!".format(players[0].player_name)
+					message = "{0} WINS!".format(clip(players[0].player_name))
 				elif players[1].winner:
-					message = "{0} WINS!".format(players[1].player_name)
+					message = "{0} WINS!".format(clip(players[1].player_name))
 				else:
 					message = "IT'S A TIE!"
 			elif players[0].player_id == None or players[1].player_name == None or players[1].player_id == None or players[1].player_name == None:
 				message = "Starting game"
 			else:
-				message = "{0}: {1}    {2}: {3}".format(players[0].player_id, players[0].player_name, players[1].player_id, players[1].player_name)
+				message = "{0}: {1}    {2}: {3}".format(players[0].player_id, clip(players[0].player_name), players[1].player_id, clip(players[1].player_name))
 
 		self.info.display(message)
 		return reset
