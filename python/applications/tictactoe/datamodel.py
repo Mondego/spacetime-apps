@@ -15,9 +15,9 @@ class Player(object):
 	winner = dimension(bool)
 	done = dimension(bool)
 
-	def __init__(self, name):
+	def __init__(self):
 		self.oid = str(uuid.uuid4())
-		self.player_name = name
+		self.player_name = "Team-{0}". format(random.randint(0,500))
 		self.ready = False
 		self.done = False
 		# Local, non-shared data

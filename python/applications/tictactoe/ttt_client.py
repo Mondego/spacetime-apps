@@ -1,5 +1,5 @@
 import sys
-import time, random
+import time, random, argparse
 import spacetime
 from spacetime import Application
 from datamodel import Player, Mark
@@ -10,11 +10,10 @@ def my_print(*args):
 	sys.stdout.flush()
 
 
-def player(dataframe):
-    my_player = Player("Team-{0}". format(random.randint(0,500)))
-    #my_player = SmarterPlayer.SmarterPlayer("Team-{0}". format(random.randint(0,500)))
+def player(dataframe, player_class):
+    my_player = player_class()
     dataframe.add_one(Player, my_player)
-    my_print("Player name: %s" % my_player.player_name)
+    my_print("Player class is %s and player name is: %s" % (my_player.__class__.__name__, my_player.player_name))
 
     while dataframe.sync() and not my_player.ready:
         time.sleep(1)
@@ -62,8 +61,26 @@ def player(dataframe):
     if my_player.winner:
         my_print("I WON!!!!!!!!")
 
+def get_class( kls ):
+    parts = kls.split('.')
+    module = ".".join(parts[:-1])
+    m = __import__( module )
+    for comp in parts[1:]:
+        m = getattr(m, comp)            
+    return m
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='The hostname of the remote dataframe (default: 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=8000, help='The port of the remote dataframe (default: 8000)')
+    parser.add_argument('--player', type=str, default='datamodel.Player', help='The class of your player (default: datamodel.Player)')
+    args = parser.parse_args()
+
+    my_print("%s %s %s" % (args.host, args.port, args.player))
+
+    player_client = Application(player, dataframe=(args.host, args.port), Types=[Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    player_client.start(get_class(args.player))
+
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    player_client = Application(player, dataframe=("127.0.0.1", port), Types=[Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
-    player_client.start()
+    main()
 
