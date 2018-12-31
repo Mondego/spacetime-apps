@@ -22,8 +22,6 @@ class Player(object):
 		self.done = False
 		# Local, non-shared data
 		self.board = Board()
-		self.marks = []
-		self.invalid_marks = []
 
 	def create_mark(self):
 		# Do something smarter?

@@ -3,7 +3,6 @@ import time, random, argparse
 import spacetime
 from spacetime import Application
 from datamodel import Player, Mark
-import SmarterPlayer
 
 def my_print(*args):
 	print(*args)
