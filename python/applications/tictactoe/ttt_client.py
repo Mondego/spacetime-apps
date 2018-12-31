@@ -3,13 +3,16 @@ import time, random
 import spacetime
 from spacetime import Application
 from datamodel import Player, Mark
+import SmarterPlayer
 
 def my_print(*args):
 	print(*args)
 	sys.stdout.flush()
 
+
 def player(dataframe):
     my_player = Player("Team-{0}". format(random.randint(0,500)))
+    #my_player = SmarterPlayer.SmarterPlayer("Team-{0}". format(random.randint(0,500)))
     dataframe.add_one(Player, my_player)
     my_print("Player name: %s" % my_player.player_name)
 
@@ -36,8 +39,6 @@ def player(dataframe):
         my_print("My turn %d!" % my_player.player_id)
 
         # Was our previous mark rejected by the server?
-        #marks = dataframe.read_all(Mark)
-        #if len(marks) > 0 and marks[0].player_id == my_player.player_id and marks[0].rejected:
         if mark != None and mark.rejected:
             my_print("Mark rejected %d, %d" % (mark.x, mark.y))
             my_player.invalid_mark(mark)
@@ -55,6 +56,9 @@ def player(dataframe):
         done = my_player.done
         my_print("Done? %s" % done)
 
+        my_player.board.render()
+
+    my_print("GAME OVER")
     if my_player.winner:
         my_print("I WON!!!!!!!!")
 
