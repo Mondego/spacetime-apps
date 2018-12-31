@@ -69,7 +69,10 @@ class Visualizer(object):
 		self.clock.tick(60)
 		self.screen.fill((255,255,255))
 		self.screen.blit(self.background.image, self.background.rect)
-		pygame.event.get()
+		for event in pygame.event.get():
+			if event.type == KEYDOWN and event.key == K_ESCAPE:
+				pygame.quit()
+				return False
 
 		# Check what happened with players
 		if self.manage_players(players):
@@ -81,6 +84,7 @@ class Visualizer(object):
 			self.screen.blit(m.image, m.rect) 
 
 		pygame.display.update()
+		return True
 
 	def manage_players(self, players):
 		reset = False
@@ -133,8 +137,8 @@ def visualize(dataframe):
 		time.sleep(0.250)
 		marks = dataframe.read_all(Mark)
 		players = dataframe.read_all(Player)
-		vis.update(marks, players)
-
+		if not vis.update(marks, players):
+			break
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
