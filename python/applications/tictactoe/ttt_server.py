@@ -22,6 +22,7 @@ class Game(object):
 		# Delete the previous players and left over marks
 		for p in self.current_players:
 			self.dataframe.delete_one(Player, p)
+		my_print("Marks left over: %d" % len(self.dataframe.read_all(Mark)))
 		self.dataframe.delete_all(Mark)
 
 		no_players = True
@@ -111,6 +112,7 @@ class Game(object):
 			my_print ("--+---+--") if row < 2 else None
 
 def ttt_server(dataframe):
+	my_print ("READY FOR NEW GAME")
 	game = Game(dataframe)
 	while game.wait_for_players():
 		# Players joined, start the game

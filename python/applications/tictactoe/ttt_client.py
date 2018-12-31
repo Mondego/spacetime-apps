@@ -15,7 +15,7 @@ def player(dataframe):
 
     while dataframe.sync() and not my_player.ready:
         time.sleep(1)
-        my_print("Not ready yet")
+        my_print("Not ready yet %d" % len(dataframe.read_all(Mark)))
         continue
 
     # Now the game starts

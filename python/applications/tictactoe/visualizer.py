@@ -73,7 +73,7 @@ class Visualizer(object):
 
 		# Check what happened with players
 		if self.manage_players(players):
-			del self.marks[:]
+			self.marks = []
 
 		# Check what happened with marks
 		self.manage_marks(marks)
@@ -101,6 +101,8 @@ class Visualizer(object):
 					message = "{0} WINS!".format(players[1].player_name)
 				else:
 					message = "IT'S A TIE!"
+			elif players[0].player_id == None or players[1].player_name == None or players[1].player_id == None or players[1].player_name == None:
+				message = "Starting game"
 			else:
 				message = "{0}: {1}    {2}: {3}".format(players[0].player_id, players[0].player_name, players[1].player_id, players[1].player_name)
 
@@ -115,8 +117,8 @@ class Visualizer(object):
 					repeated.append(m2)
 		for m in marks:
 			if m not in repeated:
-				my_print("New Mark %d %d-%d" % (m.player_id, m.x, m.y))
 				self.marks.append(MarkSprite(m))
+				my_print("New Mark %d %d-%d %s %s (total: %d)" % (m.player_id, m.x, m.y, m.oid, m.__r_df__, len(self.marks)))
 			else: # did it change state to rejected?
 				if m.rejected:
 					mark = next((x for x in self.marks if x.oid == m.oid), None)
