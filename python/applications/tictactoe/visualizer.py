@@ -135,7 +135,7 @@ class Visualizer(object):
 		for m in marks:
 			if m not in repeated:
 				self.marks.append(MarkSprite(m))
-				my_print("New Mark %d %d-%d %s %s (total: %d)" % (m.player_id, m.x, m.y, m.oid, m.__r_df__, len(self.marks)))
+				my_print("New Mark %d %d-%d %s (total: %d)" % (m.player_id, m.x, m.y, m.oid, len(self.marks)))
 			else: # did it change state to rejected?
 				if m.rejected:
 					mark = next((x for x in self.marks if x.oid == m.oid), None)
