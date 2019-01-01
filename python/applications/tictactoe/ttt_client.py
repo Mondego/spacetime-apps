@@ -57,8 +57,7 @@ def player(dataframe, player_class):
         my_player.board.render()
 
     my_print("GAME OVER")
-    if my_player.winner:
-        my_print("I WON!!!!!!!!")
+    my_player.game_over()
 
 def get_class( kls ):
     parts = kls.split('.')

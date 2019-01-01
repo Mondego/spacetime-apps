@@ -58,6 +58,9 @@ class HumanPlayer(Player):
         self.marks.append(mark)
         return mark
 
+    def game_over(self):
+        time.sleep(3)
+
     def display(self):
         display = Visualizer()
         display.register(self)
@@ -74,10 +77,16 @@ class HumanPlayer(Player):
                 traceback.print_exc()
 
     def update_screen(self):
-        if self.my_turn:
-            self.wait_text.display("Your turn!")
+        if not self.done:
+            if self.my_turn:
+                self.wait_text.display("Your turn!")
+            else:
+                self.wait_text.display("Wait...")
         else:
-            self.wait_text.display("Wait...")
+            if self.winner:
+                self.wait_text.display("GAME OVER> YOU WON!!!")
+            else:
+                self.wait_text.display("GAME OVER")
 
     def mouse_down(self, e):
         pos = e.pos

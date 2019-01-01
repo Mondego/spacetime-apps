@@ -31,18 +31,19 @@ class Player(object):
 			y = random.randint(0,2)
 			if self.board.is_empty(x, y):
 				good = True
-#			repeated = list(filter(lambda m: m.x == x and m.y == y, self.marks + self.invalid_marks))
-#			if len(repeated) == 0:
 
 		mark = Mark(self.player_id, x, y)
 		self.board.enforce(mark)
-#		self.marks.append(mark)
 		return mark
 
 	def invalid_mark(self, mark):
 		# The other player has a mark in that spot
 		player_id = (self.player_id+1) % 2
 		self.board.change_player_id(player_id, mark.x, mark.y)
+
+	def game_over(self):
+	    if self.winner:
+		    my_print("I WON!!!!!!!!")
 
 
 @pcc_set
