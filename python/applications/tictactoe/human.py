@@ -25,14 +25,10 @@ class Opponent(object):
 
 class HumanPlayer(Player):
     """
-    Example of another kind player. In this case, it does something even dumber
-    than the superclass Player: it doesn't even have the concept of the board;
-    it just uses lists of marks.
+    Example of another kind player. In this case, it's a human.
     Use it as:
-    $ python ttt_client.py --player dumber.DumberPlayer
+    $ python ttt_client.py --player human.HumanPlayer
 
-    To write your own smater player, do something simlilar, but make the
-    create_mark method do something smarter!
     """
     def __init__(self):
         super(HumanPlayer, self).__init__()
