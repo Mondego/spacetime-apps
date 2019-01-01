@@ -48,34 +48,40 @@ class MarkSprite(pygame.sprite.Sprite):
 			self.image = pygame.image.load("images/one-bad.png")
 		self.is_bad = True
 
-class InfoBar(object):
-	def __init__(self, screen):
+class TextBar(object):
+	def __init__(self, screen, pos):
 		self.font = pygame.freetype.SysFont(pygame.freetype.get_default_font(), 30)
 		self.screen = screen
+		self.pos = pos
 
 	def display(self, message):
-		self.font.render_to(self.screen, (20, 510), message, (20, 20, 20))
+		self.font.render_to(self.screen, self.pos, message, (25, 25, 25))
 
 class Visualizer(object):
 	def __init__(self):
 		pygame.init()
 		self.clock = pygame.time.Clock()
 		self.width = 512
-		self.height = 562
+		self.height = 582
 		self.screen = pygame.display.set_mode((self.width, self.height))
 
 		self.background = GridSprite()
 		self.marks = []
-		self.info = InfoBar(self.screen)
+		self.info = TextBar(self.screen, (20, 515))
+		self.listeners = []
 
 	def update(self, marks, players):
 		self.clock.tick(60)
 		self.screen.fill((255,255,255))
 		self.screen.blit(self.background.image, self.background.rect)
 		for event in pygame.event.get():
+			# my_print("Event %s %s" % (event.type, type(event.type)))
 			if event.type == KEYDOWN and event.key == K_ESCAPE:
 				pygame.quit()
 				return False
+			if event.type == MOUSEBUTTONDOWN or event.type == 5:
+				for l in self.listeners:
+					l.mouse_down(event)
 
 		# Check what happened with players
 		if self.manage_players(players):
@@ -85,6 +91,10 @@ class Visualizer(object):
 		self.manage_marks(marks)
 		for m in self.marks:
 			self.screen.blit(m.image, m.rect) 
+
+		# Let others inject messages
+		for l in self.listeners:
+			l.update_screen()
 
 		pygame.display.update()
 		return True
@@ -131,6 +141,9 @@ class Visualizer(object):
 					mark = next((x for x in self.marks if x.oid == m.oid), None)
 					if mark != None and not mark.is_bad:
 						mark.change_to_bad()
+
+	def register(self, listener):
+		self.listeners.append(listener)
 
 def visualize(dataframe):
 	vis = Visualizer()
