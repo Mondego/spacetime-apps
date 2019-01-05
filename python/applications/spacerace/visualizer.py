@@ -14,15 +14,14 @@ def my_print(*args):
 def clip(s):
     return s[0:8]
 
-class AsteroidSprite(pygame.sprite.Sprite):
-    def __init__(self, asteroid):
+class SpaceRaceSprite(pygame.sprite.Sprite):
+    def __init__(self, go):
         pygame.sprite.Sprite.__init__(self)  #call Sprite initializer
-        self.image = pygame.image.load("art/asteroid.png")
 
-        self.asteroid = asteroid
+        self.game_object = go
         # We need x, y as floats because pygame's rect uses ints
-        self.x = asteroid.global_x 
-        self.y = asteroid.global_y 
+        self.x = go.global_x 
+        self.y = go.global_y 
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = [self.x, self.y]
 
@@ -31,10 +30,27 @@ class AsteroidSprite(pygame.sprite.Sprite):
         if snap:
 #            if abs(self.x - self.asteroid.global_x) > 5:
 #                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f}".format(self.asteroid.oid, self.x, self.asteroid.global_x))
-            self.x, self.y = [self.asteroid.global_x, self.asteroid.global_y]
-        elif self.x <= World.WORLD_WIDTH or self.x >= 0:
-            self.x += (self.asteroid.velocity * delta)
+            self.x, self.y = [self.game_object.global_x, self.game_object.global_y]
+        elif self.x <= World.WORLD_WIDTH and self.x >= 0 and self.y <= World.WORLD_HEIGHT and self.y >= 0:
+            self.move_delta(delta)
         self.rect.left, self.rect.top = [self.x, self.y]
+
+class AsteroidSprite(SpaceRaceSprite):
+    def __init__(self, go):
+        self.image = pygame.image.load("art/asteroid.png")
+        SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
+
+    def move_delta(self, delta):
+            self.x += (self.game_object.velocity * delta)
+
+class ShipSprite(SpaceRaceSprite):
+    def __init__(self, go):
+        self.image = pygame.image.load("art/ship.png")
+        SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
+        my_print("New ship sprite {0}".format(self.game_object.player_id))
+
+    def move_delta(self, delta):
+        self.y += (self.game_object.velocity * delta)
 
 class TextBar(object):
     def __init__(self, screen, pos):
@@ -51,11 +67,11 @@ class Visualizer(object):
     SYNC_TICKS = 40
     def __init__(self, world):
         pygame.init()
-        self.clock = pygame.time.Clock()
+        self.world = world
         self.width = World.WORLD_WIDTH
-        self.height = World.WORLD_HEIGHT
+        self.height = World.WORLD_HEIGHT + 50
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.info = TextBar(self.screen, (50, World.WORLD_WIDTH - 50))
+        self.info = TextBar(self.screen, (50, World.WORLD_HEIGHT - 50))
 
         self.listeners = []
 
@@ -63,6 +79,8 @@ class Visualizer(object):
         # Create the asteroid sprites
         for a in world.asteroids.values():
             self.asteroids.append(AsteroidSprite(a))
+
+        self.ships = {}
 
     def update(self, snap):
         self.screen.fill((0, 0, 0))
@@ -75,10 +93,16 @@ class Visualizer(object):
                 for l in self.listeners:
                     l.mouse_down(event)
 
-        # Move the asteroid sprites
-        for a in self.asteroids:
-            a.move(Visualizer.DELTA_TIME, snap)
-            self.screen.blit(a.image, a.rect) 
+        # Are there new ships?
+        if len(self.world.ships) > len(self.ships):
+            for id, go in self.world.ships.items():
+                if id not in self.ships:
+                    self.ships[id] = ShipSprite(go)
+
+        # Move all sprites
+        for obj in self.asteroids + list(self.ships.values()):
+            obj.move(Visualizer.DELTA_TIME, snap)
+            self.screen.blit(obj.image, obj.rect) 
 
         # Let others inject messages
         for l in self.listeners:

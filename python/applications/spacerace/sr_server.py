@@ -11,6 +11,13 @@ def my_print(*args):
 
 WAIT_FOR_START = 5
 
+def x_gen():
+    x = 10
+    while True:
+        x += World.SHIP_WIDTH + 10
+        if x >= World.WORLD_WIDTH:
+            x = 10
+        yield x
 
 class Game(object):
     PHYSICS_FPS = 20 # per second; for collisions
@@ -21,7 +28,7 @@ class Game(object):
     def __init__(self, df):
         self.dataframe = df
         self.world = World()
-        self.current_players = []
+        self.current_players = {}
         self.init_asteroids()
 
     def init_asteroids(self):
@@ -55,10 +62,23 @@ class Game(object):
         # Players joined, start the game
         game_over = False
         ticks = 0
+        x = x_gen()
         while not game_over:
             start_t = time.perf_counter()
+
+            # Are there new players?
+            players = self.dataframe.read_all(Player)
+            for p in players:
+                if p.oid not in self.current_players:
+                    my_print("New player {0} {1}".format(p.oid, p.player_id))
+                    self.current_players[p.oid] = p
+                    p.ready(next(x), self.dataframe)
+
             # Move all asteroids
             self.move_asteroids()
+
+            # Move all ships
+            self.move_ships()
 
             # Check if there were any collistions
             #self.detect_collisions()
@@ -76,6 +96,11 @@ class Game(object):
         for a in self.dataframe.read_all(Asteroid):
             a.move(Game.DELTA_TIME)
         #my_print("position: %d" % (self.dataframe.read_all(Asteroid)[0].global_x))
+
+    def move_ships(self):
+        for p in self.current_players.values():
+            if p.ship.move(Game.DELTA_TIME):
+                p.trips += 1
 
 #    def detect_collisions(self):
 #        for s in self.world.ships:

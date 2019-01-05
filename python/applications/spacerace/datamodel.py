@@ -7,9 +7,10 @@ def my_print(*args):
     print(*args)
     sys.stdout.flush()
 
-class ShipState(Enum):
+class ShipState:
     DESTROYED = 0
     RUNNING = 1
+    STOPPED = 2
 
 @pcc_set
 class Player(object):
@@ -27,23 +28,41 @@ class Player(object):
         self.trips = 0
         self.done = False
         self.winner = False
-        # not shared
-        self.ship = Ship()
+        # The reference is not shared, but the ship itself is
+        self.ship = Ship(self.player_id, 0)
+        dataframe.add_one(Ship, self.ship)
+
         self.world = World()
         self.dataframe = dataframe
     
+    def init_world(self):
+        for a in self.dataframe.read_all(Asteroid):
+            self.world.asteroids[a.oid] = a
+        my_print("World has {0} asteroids".format(len(self.world.asteroids)))
+
+    def ready(self, x, df):
+        self.ready = True
+        self.dataframe = df
+        # Find the player's ship
+        for s in self.dataframe.read_all(Ship):
+            if s.player_id in self.player_id:
+                self.ship = s
+                self.ship.global_x = float(x)
+
+        my_print("Player {0} ready at {1:.2f} with ship {0}".format(self.player_id, self.ship.global_x, self.ship.oid))
+
     def act(self):
+        #my_print("Ship state is {0}".format(self.ship.state))
         # This is pretty brain dead: just keep going,
-        # ignore all asteroids
-        if self.ship.state == ShipState.RUNNING:
-            pass
-        elif self.ship.state == ShipState.DESTROYED:
-            # Delete the dead ship from the game
-            self.dataframe.delete_one(Ship, self.ship)
-            # Create a new ship
-            self.ship = Ship()
+        # ignore all asteroids. Let the server do the movement
+        # according to the constant velocity set here in "go".
+        if self.ship.state == ShipState.STOPPED:
             self.ship.go()
-            self.dataframe.add_one(Ship, self.ship)
+        elif self.ship.state == ShipState.DESTROYED:
+            my_print("Ship was destroyed!")
+            # Run it again
+            self.ship.reset()
+            self.ship.go()
 
     def game_over(self):
         if self.winner:
@@ -53,24 +72,47 @@ class Player(object):
 class Ship(object):
     oid = primarykey(str)
     player_id = dimension(str)
-    global_y = dimension(int)
+    global_x = dimension(float)
+    global_y = dimension(float)
     velocity = dimension(float)
-    status = dimension(int)
+    state = dimension(int)
 
-    def __init__(self):
+    def __init__(self, pid, x):
         self.oid = str(uuid.uuid4())
-        self.velocity = 0
-        self.global_y = 0
+        self.player_id = pid
+        self.velocity = 0.0
+        self.global_x = float(x)
+        self.global_y = float(World.WORLD_HEIGHT)
         self.trips = 0
-        self.state = ShipState.RUNNING
-
-        self.x = 0
+        self.state = int(ShipState.STOPPED)
+        my_print("New ship at {0:.2f}-{1:.2f} vel={2:.2f}".format(self.global_x, self.global_y, self.velocity))
 
     def go(self):
-        self.velocity = 10
+        self.velocity = -100.0
+        self.state = int(ShipState.RUNNING)
 
     def stop(self):
         self.velocity = 0
+        self.state = int(ShipState.STOPPED)
+
+    def reset(self):
+        self.stop()
+        self.global_y = World.WORLD_HEIGHT
+
+    def move(self, delta):
+        """ Returns True upon reaching the finish line, False otherwise
+        """
+        if self.state == ShipState.RUNNING:
+            self.global_y += (self.velocity * delta)
+            #my_print("Ship at {0:.2f}-{1:.2f} vel={2:.2f}".format(self.global_x, self.global_y, self.velocity))
+        # Did we reach the end?
+        if self.global_y <= 0:
+            # We got to the finish line!
+            my_print("Ship {0} got to the finish line".format(self.oid))
+            self.reset()
+            return True
+        return False
+
 
 @pcc_set
 class Asteroid(object):

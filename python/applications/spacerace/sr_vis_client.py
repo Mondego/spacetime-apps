@@ -2,7 +2,7 @@ import sys
 import time
 import spacetime
 from spacetime import Application
-from datamodel import Player, Asteroid, World
+from datamodel import Player, Asteroid, World, Ship
 from visualizer import Visualizer
 
 def my_print(*args):
@@ -26,6 +26,11 @@ def visualize(dataframe):
         snap = False
         if ticks % Visualizer.SYNC_TICKS == 0:
             dataframe.sync()
+            # Do we have new ships?
+            ships = dataframe.read_all(Ship)
+            for s in ships:
+                if s.oid not in world.ships:
+                    world.ships[s.oid] = s
             snap = True
         if not vis.update(snap):
             break
@@ -40,6 +45,6 @@ def visualize(dataframe):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    vis_client = Application(visualize, dataframe=("127.0.0.1", port), Types=[Asteroid], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    vis_client = Application(visualize, dataframe=("127.0.0.1", port), Types=[Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
     vis_client.start()
 
