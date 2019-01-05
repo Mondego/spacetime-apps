@@ -21,7 +21,7 @@ class SpaceRaceSprite(pygame.sprite.Sprite):
         self.game_object = go
         # We need x, y as floats because pygame's rect uses ints
         self.x = go.global_x 
-        self.y = go.global_y 
+        self.y = go.global_y
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = [self.x, self.y]
 
@@ -65,13 +65,14 @@ class Visualizer(object):
     FPS = 50
     DELTA_TIME = float(1)/FPS
     SYNC_TICKS = 40
+    WORLD_Y_OFFSET = 100
     def __init__(self, world):
         pygame.init()
         self.world = world
         self.width = World.WORLD_WIDTH
-        self.height = World.WORLD_HEIGHT + 50
+        self.height = World.WORLD_HEIGHT + Visualizer.WORLD_Y_OFFSET
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.info = TextBar(self.screen, (50, World.WORLD_HEIGHT - 50))
+        self.info = TextBar(self.screen, (50, World.WORLD_HEIGHT - Visualizer.WORLD_Y_OFFSET))
 
         self.listeners = []
 
