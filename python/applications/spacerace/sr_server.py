@@ -1,9 +1,9 @@
 import time
-import sys, random
+import sys, random, math
 import spacetime
 from rtypes import pcc_set, dimension, primarykey
 from spacetime import Application
-from datamodel import Player, Ship, Asteroid, World
+from datamodel import Player, Ship, Asteroid, World, ShipState
 
 def my_print(*args):
     print(*args)
@@ -12,12 +12,23 @@ def my_print(*args):
 WAIT_FOR_START = 5
 
 def x_gen():
-    x = 10
+    x = 100
     while True:
         x += World.SHIP_WIDTH + 10
         if x >= World.WORLD_WIDTH:
             x = 10
         yield x
+
+def overlap(topleft1, bottomright1, topleft2, bottomright2):
+    """ Returns True if the two rectangles overlap, False otherwise
+    """
+    # If one rectangle is on the left of the other
+    if topleft1[0] > bottomright2[0] or topleft2[0] > bottomright1[0]:
+        return False
+    # If one rectangle is above the other (remember Y runs down)
+    if topleft1[1] > bottomright2[1] or topleft2[1] > bottomright1[1]:
+        return False
+    return True
 
 class Game(object):
     PHYSICS_FPS = 20 # per second; for collisions
@@ -81,7 +92,7 @@ class Game(object):
             self.move_ships()
 
             # Check if there were any collistions
-            #self.detect_collisions()
+            self.detect_collisions()
 
             # Sync the shared data every so often
             if ticks % 8 == 0:
@@ -102,11 +113,43 @@ class Game(object):
             if p.ship.move(Game.DELTA_TIME):
                 p.trips += 1
 
-#    def detect_collisions(self):
-#        for s in self.world.ships:
+    def detect_collisions(self):
+        for a in self.dataframe.read_all(Asteroid):
+            a_top_left = [a.global_x, a.global_y]
+            a_bottom_right = [a.global_x + World.ASTEROID_WIDTH, a.global_y + World.ASTEROID_HEIGHT]
+            # Let's enlarge the object relative to its velocity
+            if a.velocity < 0:
+                a_top_left[0] += Game.DELTA_TIME * a.velocity
+            else:
+                a_bottom_right[0] += Game.DELTA_TIME * a.velocity
+
+            for s in self.dataframe.read_all(Ship):
+                # Before we do anything, was it destoyed already?
+                if s.state == ShipState.DESTROYED:
+                    continue
+                # Before we do more computation, are they too far to even consider?
+                if math.hypot(s.global_x - a.global_x, s.global_y - a.global_y) > 200:
+                    continue
+
+                # Is the asteroid going away from the ship?
+                if ((a.velocity < 0 and a.global_x + World.ASTEROID_WIDTH < s.global_x) or 
+                    (a.velocity > 0 and a.global_x > s.global_x + World.SHIP_WIDTH)):
+                    continue
+
+                s_top_left = [s.global_x, s.global_y]
+                s_bottom_right = [s.global_x + World.SHIP_WIDTH, s.global_y + World.SHIP_HEIGHT]
+                # Let's enlarge the object relative to its velocity
+                s_top_left[1] += Game.DELTA_TIME * s.velocity
+
+#                my_print("Ship and asteroid close s: {0}-{1} {2}-{3}   a: {4}-{5} {6}-{7}".format(s_top_left[0], s_top_left[1], 
+#                                                                                                  s_bottom_right[0], s_bottom_right[1], 
+#                                                                                                  a_top_left[0], a_top_left[1], 
+#                                                                                                  a_bottom_right[0], a_bottom_right[1]))
+
+                if overlap(a_top_left, a_bottom_right, s_top_left, s_bottom_right):
+                    s.collision()
 
     def stop_game(self, players, winner):
-        #players = dataframe.read_all(Player)
         for pid, player in enumerate(self.current_players):
             player.done = True
         if winner >= 0:

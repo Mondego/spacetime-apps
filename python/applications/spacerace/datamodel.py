@@ -59,10 +59,13 @@ class Player(object):
         if self.ship.state == ShipState.STOPPED:
             self.ship.go()
         elif self.ship.state == ShipState.DESTROYED:
-            my_print("Ship was destroyed!")
-            # Run it again
-            self.ship.reset()
-            self.ship.go()
+            my_print("My ship was destroyed!")
+            return False
+        return True
+
+    def reset(self):
+        self.ship.reset()
+        self.ship.go()
 
     def game_over(self):
         if self.winner:
@@ -84,16 +87,16 @@ class Ship(object):
         self.global_x = float(x)
         self.global_y = float(World.WORLD_HEIGHT)
         self.trips = 0
-        self.state = int(ShipState.STOPPED)
+        self.state = ShipState.STOPPED
         my_print("New ship at {0:.2f}-{1:.2f} vel={2:.2f}".format(self.global_x, self.global_y, self.velocity))
 
     def go(self):
         self.velocity = -100.0
-        self.state = int(ShipState.RUNNING)
+        self.state = ShipState.RUNNING
 
     def stop(self):
-        self.velocity = 0
-        self.state = int(ShipState.STOPPED)
+        self.velocity = 0.0
+        self.state = ShipState.STOPPED
 
     def reset(self):
         self.stop()
@@ -104,6 +107,7 @@ class Ship(object):
         """
         if self.state == ShipState.RUNNING:
             self.global_y += (self.velocity * delta)
+
             #my_print("Ship at {0:.2f}-{1:.2f} vel={2:.2f}".format(self.global_x, self.global_y, self.velocity))
         # Did we reach the end?
         if self.global_y <= 0:
@@ -113,6 +117,10 @@ class Ship(object):
             return True
         return False
 
+    def collision(self):
+        self.state = ShipState.DESTROYED
+        self.velocity = 0.0
+        my_print("Ship {0} was destroyed".format(self.player_id))
 
 @pcc_set
 class Asteroid(object):
@@ -140,7 +148,6 @@ class Asteroid(object):
         vel = speed if x == 0 else speed * -1
         return x, y, vel
 
-
 class World(object):
     """ Represents the world itself. Objects of this type are not
         being shared but they refer to objects that are.
@@ -154,15 +161,15 @@ class World(object):
     ASTEROID_MIN_Y = WORLD_HEIGHT - 42 # px (counting from the top, y goes down)
     ASTEROID_MIN_SPEED = 50 # px/sec
     ASTEROID_MAX_SPEED = 200 # px/sec, i.e. go across the screen in 1 sec
-    ASTEROID_COUNT = 10
+    ASTEROID_COUNT = 20
 
     def __init__(self):
         self.ships = {}
         self.asteroids = {}
 
     def reset(self):
-        self.ships = []
-        self.asteroids = []
+        self.ships = {}
+        self.asteroids = {}
 
     def render(self):
         my_print(" ")

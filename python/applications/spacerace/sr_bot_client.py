@@ -22,11 +22,18 @@ def bot_driver(dataframe):
         start_t = time.perf_counter()
 
         dataframe.sync()
-        my_player.act()
+        survived = my_player.act()
+
+        if not survived:
+            # Timeout
+            time.sleep(5)
+            my_player.reset()
+            continue
 
         if my_player.trips > trips:
             my_print("Successful trips: {0}". format(my_player.trips))
             trips = my_player.trips
+
         elapsed_t = time.perf_counter() - start_t
         sleep_t = SYNC_TIME - elapsed_t
         if sleep_t > 0:

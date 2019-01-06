@@ -2,7 +2,7 @@ import sys
 import time
 import spacetime
 from spacetime import Application
-from datamodel import Player, World, Ship, Asteroid
+from datamodel import Player, World, Ship, Asteroid, ShipState
 import pygame
 from pygame.locals import *
 import pygame.freetype
@@ -41,16 +41,35 @@ class AsteroidSprite(SpaceRaceSprite):
         SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
 
     def move_delta(self, delta):
-            self.x += (self.game_object.velocity * delta)
+        self.x += (self.game_object.velocity * delta)
 
 class ShipSprite(SpaceRaceSprite):
     def __init__(self, go):
-        self.image = pygame.image.load("art/ship.png")
+        self.images = [pygame.image.load("art/ship.png")]
+        self.image_idx = 0
+        self.image = self.images[self.image_idx]
+        self.anim_counter = 0
+        for i in range(1, 16):
+            self.images.append(pygame.image.load("art/ship-destroyed-{0}.png".format(i)))
         SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
         my_print("New ship sprite {0}".format(self.game_object.player_id))
 
     def move_delta(self, delta):
-        self.y += (self.game_object.velocity * delta)
+        if self.game_object.state != ShipState.DESTROYED:
+            self.reset()
+            self.y += (self.game_object.velocity * delta)
+        else:
+            self.next_image()
+
+    def next_image(self):
+        if self.anim_counter % 4 == 0:
+            self.image_idx = min(self.image_idx + 1, len(self.images) - 1)
+            self.image = self.images[self.image_idx]
+        self.anim_counter += 1
+
+    def reset(self):
+        self.image_idx = 0
+        self.image = self.images[0]
 
 class TextBar(object):
     def __init__(self, screen, pos):
