@@ -1,5 +1,5 @@
 import sys
-import time
+import time, argparse
 import spacetime
 from spacetime import Application
 from datamodel import Player, Asteroid, Ship, World
@@ -10,8 +10,8 @@ def my_print(*args):
 
 SYNC_TIME = 0.3 # secs
 
-def bot_driver(dataframe):
-    my_player = Player(dataframe)
+def bot_driver(dataframe, player_class):
+    my_player = player_class(dataframe)
     dataframe.add_one(Player, my_player)
     dataframe.sync()
     my_player.init_world()
@@ -41,8 +41,27 @@ def bot_driver(dataframe):
         else:
             my_print("Skipped a beat, elapsed was {0}".format(elapsed_t))
 
+def get_class( kls ):
+    parts = kls.split('.')
+    module = ".".join(parts[:-1])
+    m = __import__( module )
+    for comp in parts[1:]:
+        m = getattr(m, comp)
+    return m
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='The hostname of the remote dataframe (default: 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=8000, help='The port of the remote dataframe (default: 8000)')
+    parser.add_argument('--player', type=str, default='datamodel.Player', help='The class of your player (default: datamodel.Player)')
+    args = parser.parse_args()
+
+    my_print("%s %s %s" % (args.host, args.port, args.player))
+
+    player_client = Application(bot_driver, dataframe=(args.host, args.port), Types=[Player, Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    player_client.start(get_class(args.player))
+
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    vis_client = Application(bot_driver, dataframe=("127.0.0.1", port), Types=[Player, Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
-    vis_client.start()
+    main()
+
 

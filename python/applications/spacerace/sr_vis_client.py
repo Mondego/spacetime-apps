@@ -1,5 +1,5 @@
 import sys
-import time
+import time, argparse
 import spacetime
 from spacetime import Application
 from datamodel import Player, Asteroid, World, Ship
@@ -43,8 +43,18 @@ def visualize(dataframe):
         else:
             my_print("Skipped a beat, elapsed was {0}".format(elapsed_t))
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='The hostname of the remote dataframe (default: 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=8000, help='The port of the remote dataframe (default: 8000)')
+    args = parser.parse_args()
+
+    my_print("%s %s" % (args.host, args.port))
+
+    player_client = Application(visualize, dataframe=(args.host, args.port), Types=[Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    player_client.start()
+
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    vis_client = Application(visualize, dataframe=("127.0.0.1", port), Types=[Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
-    vis_client.start()
+    main()
+
 
