@@ -14,18 +14,16 @@ class ShipState:
 
 @pcc_set
 class Player(object):
-    oid = primarykey(str)
+    oid = primarykey(int)
     player_id = dimension(str)
     ready = dimension(bool)
-    trips = dimension(int)
     done = dimension(bool)
     winner = dimension(bool)
 
     def __init__(self, dataframe):
-        self.oid = str(uuid.uuid4())
-        self.player_id = "Team-{0}". format(random.randint(0,500))
+        self.oid = random.randint(0, sys.maxsize)
+        self.player_id = "T-{0}". format(random.randint(0,500))
         self.ready = False
-        self.trips = 0
         self.done = False
         self.winner = False
         # The reference is not shared, but the ship itself is
@@ -73,15 +71,16 @@ class Player(object):
 
 @pcc_set
 class Ship(object):
-    oid = primarykey(str)
+    oid = primarykey(int)
     player_id = dimension(str)
     global_x = dimension(float)
     global_y = dimension(float)
     velocity = dimension(float)
     state = dimension(int)
+    trips = dimension(int)
 
     def __init__(self, pid, x):
-        self.oid = str(uuid.uuid4())
+        self.oid = random.randint(0, sys.maxsize)
         self.player_id = pid
         self.velocity = 0.0
         self.global_x = float(x)
@@ -124,13 +123,13 @@ class Ship(object):
 
 @pcc_set
 class Asteroid(object):
-    oid = primarykey(str)
+    oid = primarykey(int)
     global_x = dimension(float)
     global_y = dimension(float)
     velocity = dimension(float)
 
     def __init__(self):
-        self.oid = str(uuid.uuid4())
+        self.oid = random.randint(0, sys.maxsize)
         self.global_x, self.global_y, self.velocity = Asteroid._random_asteroid_data()
         my_print("New asteroid at {0:.2f}-{1:.2f} vel={2:.2f}".format(self.global_x, self.global_y, self.velocity))
 

@@ -1,5 +1,6 @@
 import sys
 import time
+import operator
 import spacetime
 from spacetime import Application
 from datamodel import Player, World, Ship, Asteroid, ShipState
@@ -12,7 +13,7 @@ def my_print(*args):
     sys.stdout.flush()
 
 def clip(s):
-    return s[0:8]
+    return s[0:5]
 
 class SpaceRaceSprite(pygame.sprite.Sprite):
     def __init__(self, go):
@@ -72,13 +73,28 @@ class ShipSprite(SpaceRaceSprite):
         self.image = self.images[0]
 
 class TextBar(object):
-    def __init__(self, screen, pos):
-        self.font = pygame.freetype.SysFont(pygame.freetype.get_default_font(), 30)
+    def __init__(self, screen, pos, world):
+        self.font = pygame.freetype.SysFont(pygame.freetype.get_default_font(), 10)
         self.screen = screen
         self.pos = pos
+        self.world = world
+        self.update_ticks = 0
+        self.message = ""
 
-    def display(self, message):
-        self.font.render_to(self.screen, self.pos, message, (255, 255, 255))
+    def display(self):
+        if self.update_ticks % Visualizer.FPS == 0:
+            self.message = " " * 20
+            trios = [(s.player_id, s.global_x, s.trips) for s in self.world.ships.values()]
+            trios.sort(key=operator.itemgetter(1))
+            previous_len = 0
+            for name, position, trips in trios:
+                nm = clip(name)
+                #my_print("Position={0} int(p)={1} previous={2}".format(position, int(position/10), previous_len))
+                self.message += " " * (int(position/10) - previous_len)
+                self.message += nm
+                previous_len += len(nm)
+        self.update_ticks += 1
+        self.font.render_to(self.screen, self.pos, self.message, (0, 255, 0))
 
 class Visualizer(object):
     FPS = 50
@@ -91,7 +107,7 @@ class Visualizer(object):
         self.width = World.WORLD_WIDTH
         self.height = World.WORLD_HEIGHT + Visualizer.WORLD_Y_OFFSET
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.info = TextBar(self.screen, (50, World.WORLD_HEIGHT - Visualizer.WORLD_Y_OFFSET))
+        self.info = TextBar(self.screen, (0, self.height - Visualizer.WORLD_Y_OFFSET + 10), world)
 
         self.listeners = []
 
@@ -123,6 +139,9 @@ class Visualizer(object):
         for obj in self.asteroids + list(self.ships.values()):
             obj.move(Visualizer.DELTA_TIME, snap)
             self.screen.blit(obj.image, obj.rect) 
+
+        # Text bar
+        self.info.display()
 
         # Let others inject messages
         for l in self.listeners:

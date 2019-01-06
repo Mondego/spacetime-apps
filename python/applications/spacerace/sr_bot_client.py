@@ -30,9 +30,9 @@ def bot_driver(dataframe):
             my_player.reset()
             continue
 
-        if my_player.trips > trips:
-            my_print("Successful trips: {0}". format(my_player.trips))
-            trips = my_player.trips
+        if my_player.ship.trips > trips:
+            my_print("Successful trips: {0}". format(my_player.ship.trips))
+            trips = my_player.ship.trips
 
         elapsed_t = time.perf_counter() - start_t
         sleep_t = SYNC_TIME - elapsed_t

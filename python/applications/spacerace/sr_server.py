@@ -14,10 +14,10 @@ WAIT_FOR_START = 5
 def x_gen():
     x = 100
     while True:
-        x += World.SHIP_WIDTH + 10
         if x >= World.WORLD_WIDTH:
-            x = 10
+            x = 100
         yield x
+        x += World.SHIP_WIDTH + 20
 
 def overlap(topleft1, bottomright1, topleft2, bottomright2):
     """ Returns True if the two rectangles overlap, False otherwise
@@ -111,7 +111,7 @@ class Game(object):
     def move_ships(self):
         for p in self.current_players.values():
             if p.ship.move(Game.DELTA_TIME):
-                p.trips += 1
+                p.ship.trips += 1
 
     def detect_collisions(self):
         for a in self.dataframe.read_all(Asteroid):
