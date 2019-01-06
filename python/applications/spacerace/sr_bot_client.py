@@ -8,7 +8,7 @@ def my_print(*args):
     print(*args)
     sys.stdout.flush()
 
-SYNC_TIME = 0.1 # secs
+SYNC_TIME = 0.3 # secs
 
 def bot_driver(dataframe):
     my_player = Player(dataframe)
