@@ -135,7 +135,7 @@ class Asteroid(object):
 
     def move(self, delta):
         self.global_x += (self.velocity * delta)
-        #my_print("Asteroid at {0:.2f}-{1:.2f} vel={2:.2f}".format(self.global_x, self.global_y, self.velocity))
+        #my_print("Asteroid at {0:.2f}-{1:.2f} vel={2:.2f} delta={3:.2f}".format(self.global_x, self.global_y, self.velocity, delta))
         # Did it reach the end?
         if self.global_x >= World.WORLD_WIDTH or self.global_x <= 0:
             self.global_x, self.global_y, self.velocity = Asteroid._random_asteroid_data()

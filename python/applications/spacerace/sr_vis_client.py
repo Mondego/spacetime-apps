@@ -1,5 +1,5 @@
 import sys
-import time, argparse
+import time, argparse, threading
 import spacetime
 from spacetime import Application
 from datamodel import Player, Asteroid, World, Ship
@@ -12,36 +12,38 @@ def my_print(*args):
 def clip(s):
     return s[0:8]
 
+SYNC_TIME = 0.2 # secs
+
+def sync(dataframe, world, vis):
+    done = False
+    while not done:
+        start_t = time.perf_counter()
+        dataframe.sync()
+        # Do we have new ships?
+        ships = dataframe.read_all(Ship)
+        for s in ships:
+            if s.oid not in world.ships:
+                world.ships[s.oid] = s
+
+        vis.snapit()
+        elapsed_t = time.perf_counter() - start_t
+        sleep_t = SYNC_TIME - elapsed_t
+        if sleep_t > 0:
+            time.sleep(sleep_t)
+        else:
+            my_print("Sync thread skipped a beat, elapsed was {0}".format(elapsed_t))
+
 def visualize(dataframe):
     dataframe.sync()
     world = World()
     for a in dataframe.read_all(Asteroid):
         world.asteroids[a.oid] = a
+    
     vis = Visualizer(world)
+    threading.Thread(target=sync, args=[dataframe, world, vis]).start()
+    # Run pygame on the main thread or else
+    vis.run()
 
-    ticks = 0
-    done = False
-    while not done:
-        start_t = time.perf_counter()
-        snap = False
-        if ticks % Visualizer.SYNC_TICKS == 0:
-            dataframe.sync()
-            # Do we have new ships?
-            ships = dataframe.read_all(Ship)
-            for s in ships:
-                if s.oid not in world.ships:
-                    world.ships[s.oid] = s
-            snap = True
-        if not vis.update(snap):
-            break
-        ticks += 1
-
-        elapsed_t = time.perf_counter() - start_t
-        sleep_t = Visualizer.DELTA_TIME - elapsed_t
-        if sleep_t > 0:
-            time.sleep(sleep_t)
-        else:
-            my_print("Skipped a beat, elapsed was {0}".format(elapsed_t))
 
 def main():
     parser = argparse.ArgumentParser()

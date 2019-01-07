@@ -94,9 +94,7 @@ class Game(object):
             # Check if there were any collistions
             self.detect_collisions()
 
-            # Sync the shared data every so often
-            if ticks % 8 == 0:
-                self.dataframe.sync()
+            self.dataframe.sync()
 
             ticks += 1
             elapsed_t = time.perf_counter() - start_t

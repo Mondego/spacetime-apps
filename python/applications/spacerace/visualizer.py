@@ -1,6 +1,7 @@
 import sys
 import time
 import operator
+from threading import Thread
 import spacetime
 from spacetime import Application
 from datamodel import Player, World, Ship, Asteroid, ShipState
@@ -21,7 +22,7 @@ class SpaceRaceSprite(pygame.sprite.Sprite):
 
         self.game_object = go
         # We need x, y as floats because pygame's rect uses ints
-        self.x = go.global_x 
+        self.x = go.global_x
         self.y = go.global_y
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = [self.x, self.y]
@@ -29,8 +30,8 @@ class SpaceRaceSprite(pygame.sprite.Sprite):
     def move(self, delta, snap):
         # Do we need to snap to world positions?
         if snap:
-#            if abs(self.x - self.asteroid.global_x) > 5:
-#                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f}".format(self.asteroid.oid, self.x, self.asteroid.global_x))
+#            if abs(self.x - self.game_object.global_x) > 15:
+#                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f} vel={3:.2f}".format(self.game_object.oid, self.x, self.game_object.global_x, self.game_object.velocity))
             self.x, self.y = [self.game_object.global_x, self.game_object.global_y]
         elif self.x <= World.WORLD_WIDTH and self.x >= 0 and self.y <= World.WORLD_HEIGHT and self.y >= 0:
             self.move_delta(delta)
@@ -43,6 +44,7 @@ class AsteroidSprite(SpaceRaceSprite):
 
     def move_delta(self, delta):
         self.x += (self.game_object.velocity * delta)
+        #my_print("x={0:.2f} delta={1:.2f} vel={2:.2f}".format(self.x, delta, self.game_object.velocity))
 
 class ShipSprite(SpaceRaceSprite):
     def __init__(self, go):
@@ -99,9 +101,10 @@ class TextBar(object):
 class Visualizer(object):
     FPS = 50
     DELTA_TIME = float(1)/FPS
-    SYNC_TICKS = 40
+    SYNC_TICKS = 50
     WORLD_Y_OFFSET = 100
     def __init__(self, world):
+
         pygame.init()
         self.world = world
         self.width = World.WORLD_WIDTH
@@ -118,39 +121,56 @@ class Visualizer(object):
 
         self.ships = {}
 
-    def update(self, snap):
-        self.screen.fill((0, 0, 0))
-        for event in pygame.event.get():
-            # my_print("Event %s %s" % (event.type, type(event.type)))
-            if event.type == KEYDOWN and event.key == K_ESCAPE:
-                pygame.quit()
-                return False
-            if event.type == MOUSEBUTTONDOWN or event.type == 5:
-                for l in self.listeners:
-                    l.mouse_down(event)
+        # Sync thread sets this
+        self.snap = False
 
-        # Are there new ships?
-        if len(self.world.ships) > len(self.ships):
-            for id, go in self.world.ships.items():
-                if id not in self.ships:
-                    self.ships[id] = ShipSprite(go)
+    def run(self):
+        done = False
+        while not done:
+            start_t = time.perf_counter()
 
-        # Move all sprites
-        for obj in self.asteroids + list(self.ships.values()):
-            obj.move(Visualizer.DELTA_TIME, snap)
-            self.screen.blit(obj.image, obj.rect) 
+            self.screen.fill((0, 0, 0))
+            for event in pygame.event.get():
+                # my_print("Event %s %s" % (event.type, type(event.type)))
+                if event.type == KEYDOWN and event.key == K_ESCAPE:
+                    pygame.quit()
+                    done = True
+                if event.type == MOUSEBUTTONDOWN or event.type == 5:
+                    for l in self.listeners:
+                        l.mouse_down(event)
 
-        # Text bar
-        self.info.display()
+            # Are there new ships?
+            if len(self.world.ships) > len(self.ships):
+                for id, go in self.world.ships.items():
+                    if id not in self.ships:
+                        self.ships[id] = ShipSprite(go)
 
-        # Let others inject messages
-        for l in self.listeners:
-            l.update_screen()
+            # Move all sprites
+            snap = self.snap
+            for obj in self.asteroids + list(self.ships.values()):
+                obj.move(Visualizer.DELTA_TIME, snap)
+                self.screen.blit(obj.image, obj.rect) 
+            if self.snap:
+                self.snap = False
 
-        pygame.display.update()
-        #self.clock.tick(Visualizer.FPS)
+            # Text bar
+            self.info.display()
 
-        return True
+            # Let others inject messages
+            for l in self.listeners:
+                l.update_screen()
+
+            pygame.display.update()
+
+            elapsed_t = time.perf_counter() - start_t
+            sleep_t = Visualizer.DELTA_TIME - elapsed_t
+            if sleep_t > 0:
+                time.sleep(sleep_t)
+            else:
+                my_print("pygame thread skipped a beat, elapsed was {0}".format(elapsed_t))
+
+    def snapit(self):
+        self.snap = True
 
     def register(self, listener):
         self.listeners.append(listener)
