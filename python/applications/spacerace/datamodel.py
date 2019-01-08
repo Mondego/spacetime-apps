@@ -145,7 +145,7 @@ class Asteroid(object):
         y = float(random.randint(0, World.ASTEROID_MIN_Y))
         speed = float(random.randint(World.ASTEROID_MIN_SPEED, World.ASTEROID_MAX_SPEED))
         vel = speed if x == 0 else speed * -1
-        return x, y, v    
+        return x, y, vel
     
     @merge
     def merge_func(original, yours, theirs):
