@@ -21,27 +21,19 @@ class SpaceRaceSprite(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)  #call Sprite initializer
 
         self.game_object = go
-        # We need x, y as floats because pygame's rect uses ints
-        self.x = go.global_x
-        self.y = go.global_y
         self.rect = self.image.get_rect()
-        self.rect.left, self.rect.top = [self.x, self.y]
+        self.rect.left, self.rect.top = [self.game_object.global_x, self.game_object.global_y]
 
 class AsteroidSprite(SpaceRaceSprite):
     def __init__(self, go):
         self.image = pygame.image.load("art/asteroid.png")
         SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
 
-    def move(self, delta, snap):
-        # Do we need to snap to world positions?
-        if snap:
-#            if abs(self.x - self.game_object.global_x) > 15:
-#                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f} vel={3:.2f}".format(self.game_object.oid, self.x, self.game_object.global_x, self.game_object.velocity))
-            self.x, self.y = [self.game_object.global_x, self.game_object.global_y]
-        elif self.x <= World.WORLD_WIDTH and self.x >= 0:
-            self.x += (self.game_object.velocity * delta)
+    def move(self, delta):
+        if self.game_object.global_x <= World.WORLD_WIDTH and self.game_object.global_x >= 0:
+            self.game_object.global_x += (self.game_object.velocity * delta)
 
-        self.rect.left, self.rect.top = [self.x, self.y]
+        self.rect.left, self.rect.top = [self.game_object.global_x, self.game_object.global_y]
 
 class ShipSprite(SpaceRaceSprite):
     def __init__(self, go):
@@ -54,13 +46,8 @@ class ShipSprite(SpaceRaceSprite):
         SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
         my_print("New ship sprite {0}".format(self.game_object.player_id))
 
-    def move(self, delta, snap, asteroids):
-        # Do we need to snap to world positions?
-        if snap:
-#            if abs(self.x - self.game_object.global_x) > 15:
-#                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f} vel={3:.2f}".format(self.game_object.oid, self.x, self.game_object.global_x, self.game_object.velocity))
-            self.x, self.y = [self.game_object.global_x, self.game_object.global_y]
-        elif self.y <= World.WORLD_HEIGHT and self.y >= 0:
+    def move(self, delta, asteroids):
+        if self.game_object.global_y <= World.WORLD_HEIGHT and self.game_object.global_y >= 0:
             self.move_delta(delta)
             # Did we collide?
             if self.game_object.state != ShipState.DESTROYED:
@@ -68,12 +55,12 @@ class ShipSprite(SpaceRaceSprite):
                     if check_collision(a.game_object, self.game_object, Visualizer.DELTA_TIME+0.02):
                         break
 
-        self.rect.left, self.rect.top = [self.x, self.y]
+        self.rect.left, self.rect.top = [self.game_object.global_x, self.game_object.global_y]
 
     def move_delta(self, delta):
         if self.game_object.state != ShipState.DESTROYED:
             self.reset()
-            self.y += (self.game_object.velocity * delta)
+            self.game_object.global_y += (self.game_object.velocity * delta)
         else:
             self.next_image()
 
@@ -134,9 +121,6 @@ class Visualizer(object):
 
         self.ships = {}
 
-        # Sync thread sets this
-        self.snap = False
-
     def run(self):
         done = False
         while not done:
@@ -159,16 +143,13 @@ class Visualizer(object):
                         self.ships[id] = ShipSprite(go)
 
             # Move asteroids
-            snap = self.snap
             for obj in self.asteroids:
-                obj.move(Visualizer.DELTA_TIME, snap)
+                obj.move(Visualizer.DELTA_TIME)
                 self.screen.blit(obj.image, obj.rect) 
             # Move ships
             for obj in list(self.ships.values()):
-                obj.move(Visualizer.DELTA_TIME, snap, self.asteroids)
+                obj.move(Visualizer.DELTA_TIME, self.asteroids)
                 self.screen.blit(obj.image, obj.rect) 
-            if self.snap:
-                self.snap = False
 
             # Text bar
             self.info.display()
@@ -185,9 +166,6 @@ class Visualizer(object):
                 time.sleep(sleep_t)
             else:
                 my_print("pygame thread skipped a beat, elapsed was {0}".format(elapsed_t))
-
-    def snapit(self):
-        self.snap = True
 
     def register(self, listener):
         self.listeners.append(listener)

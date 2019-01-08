@@ -1,6 +1,6 @@
 import sys, random, uuid, math
 from enum import Enum
-from rtypes import pcc_set
+from rtypes import pcc_set, merge
 from rtypes import dimension, primarykey
 
 def my_print(*args):
@@ -145,7 +145,12 @@ class Asteroid(object):
         y = float(random.randint(0, World.ASTEROID_MIN_Y))
         speed = float(random.randint(World.ASTEROID_MIN_SPEED, World.ASTEROID_MAX_SPEED))
         vel = speed if x == 0 else speed * -1
-        return x, y, vel
+        return x, y, v    
+    
+    @merge
+    def merge_func(original, yours, theirs):
+        my_print("Conflict! {0:.2f}-{1:.2f}".format(yours.global_x, yours.global_y))
+        return theirs
 
 class World(object):
     """ Represents the world itself. Objects of this type are not

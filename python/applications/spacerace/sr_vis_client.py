@@ -18,14 +18,16 @@ def sync(dataframe, world, vis):
     done = False
     while not done:
         start_t = time.perf_counter()
-        dataframe.sync()
+        dataframe.commit()
+        dataframe.pull()
+        dataframe.checkout()
+        my_print("After pulling/checkout")
         # Do we have new ships?
         ships = dataframe.read_all(Ship)
         for s in ships:
             if s.oid not in world.ships:
                 world.ships[s.oid] = s
 
-        vis.snapit()
         elapsed_t = time.perf_counter() - start_t
         sleep_t = SYNC_TIME - elapsed_t
         if sleep_t > 0:
@@ -34,7 +36,7 @@ def sync(dataframe, world, vis):
             my_print("Sync thread skipped a beat, elapsed was {0}".format(elapsed_t))
 
 def visualize(dataframe):
-    dataframe.sync()
+    dataframe.pull()
     world = World()
     for a in dataframe.read_all(Asteroid):
         world.asteroids[a.oid] = a
