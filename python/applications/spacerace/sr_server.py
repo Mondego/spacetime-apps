@@ -23,7 +23,6 @@ class Game(object):
     PHYSICS_FPS = 20 # per second; for collisions
     DELTA_TIME = float(1)/PHYSICS_FPS
     ASTEROID_GENERATION_TICKS = 1
-    SYNC_FPS = PHYSICS_FPS / 2
 
     def __init__(self, df):
         self.dataframe = df
@@ -35,6 +34,7 @@ class Game(object):
         for n in range(World.ASTEROID_COUNT):
             ast = Asteroid()
             self.dataframe.add_one(Asteroid, ast)
+        self.dataframe.commit()
 
     def wait_for_players(self):
         # Delete the previous players and left over ships
@@ -66,6 +66,7 @@ class Game(object):
         while not game_over:
             start_t = time.perf_counter()
 
+            self.dataframe.checkout()
             # Are there new players?
             players = self.dataframe.read_all(Player)
             for p in players:
@@ -83,7 +84,7 @@ class Game(object):
             # Check if there were any collistions
             self.detect_collisions()
 
-            self.dataframe.sync()
+            self.dataframe.commit()
 
             ticks += 1
             elapsed_t = time.perf_counter() - start_t
@@ -126,7 +127,9 @@ def sr_server(dataframe):
 
 
 def main(port):
-    server = Application(sr_server, server_port=port, Types=[Player, Ship, Asteroid], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    server = Application(sr_server, server_port=port, 
+                         Types=[Player, Ship, Asteroid], 
+                         version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
     server.start()
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ def sync(dataframe, world, vis):
     while not done:
         start_t = time.perf_counter()
         dataframe.commit()
+        my_print("Before pulling/checkout")
         dataframe.pull()
         dataframe.checkout()
         my_print("After pulling/checkout")

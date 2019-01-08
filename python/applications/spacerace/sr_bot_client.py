@@ -11,9 +11,12 @@ def my_print(*args):
 SYNC_TIME = 0.3 # secs
 
 def bot_driver(dataframe, player_class):
+    dataframe.pull()
+    dataframe.checkout()
     my_player = player_class(dataframe)
     dataframe.add_one(Player, my_player)
-    dataframe.sync()
+    dataframe.commit()
+    dataframe.push()
     my_player.init_world()
 
     trips = 0
@@ -21,13 +24,18 @@ def bot_driver(dataframe, player_class):
     while not done:
         start_t = time.perf_counter()
 
-        dataframe.sync()
+        dataframe.pull()
+        dataframe.checkout()
         survived = my_player.act()
+        dataframe.commit()
+        dataframe.push()
 
         if not survived:
             # Timeout
             time.sleep(5)
             my_player.reset()
+            dataframe.commit()
+            dataframe.push()
             continue
 
         if my_player.ship.trips > trips:
