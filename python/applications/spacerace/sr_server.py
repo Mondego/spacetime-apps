@@ -112,19 +112,16 @@ class Game(object):
                 p.ship.trips += 1
 
     def detect_collisions(self):
-        for a in self.dataframe.read_all(Asteroid):
-            a_top_left = [a.global_x, a.global_y]
-            a_bottom_right = [a.global_x + World.ASTEROID_WIDTH, a.global_y + World.ASTEROID_HEIGHT]
+        for s in self.dataframe.read_all(Ship):
+            # Before we do anything, was it destoyed already?
+            if s.state == ShipState.DESTROYED:
+                continue
+            s_top_left = [s.global_x, s.global_y]
+            s_bottom_right = [s.global_x + World.SHIP_WIDTH, s.global_y + World.SHIP_HEIGHT]
             # Let's enlarge the object relative to its velocity
-            if a.velocity < 0:
-                a_top_left[0] += Game.DELTA_TIME * a.velocity
-            else:
-                a_bottom_right[0] += Game.DELTA_TIME * a.velocity
+            s_top_left[1] += Game.DELTA_TIME * s.velocity
 
-            for s in self.dataframe.read_all(Ship):
-                # Before we do anything, was it destoyed already?
-                if s.state == ShipState.DESTROYED:
-                    continue
+            for a in self.dataframe.read_all(Asteroid):
                 # Before we do more computation, are they too far to even consider?
                 if math.hypot(s.global_x - a.global_x, s.global_y - a.global_y) > 200:
                     continue
@@ -134,10 +131,13 @@ class Game(object):
                     (a.velocity > 0 and a.global_x > s.global_x + World.SHIP_WIDTH)):
                     continue
 
-                s_top_left = [s.global_x, s.global_y]
-                s_bottom_right = [s.global_x + World.SHIP_WIDTH, s.global_y + World.SHIP_HEIGHT]
+                a_top_left = [a.global_x, a.global_y]
+                a_bottom_right = [a.global_x + World.ASTEROID_WIDTH, a.global_y + World.ASTEROID_HEIGHT]
                 # Let's enlarge the object relative to its velocity
-                s_top_left[1] += Game.DELTA_TIME * s.velocity
+                if a.velocity < 0:
+                    a_top_left[0] += Game.DELTA_TIME * a.velocity
+                else:
+                    a_bottom_right[0] += Game.DELTA_TIME * a.velocity
 
 #                my_print("Ship and asteroid close s: {0}-{1} {2}-{3}   a: {4}-{5} {6}-{7}".format(s_top_left[0], s_top_left[1], 
 #                                                                                                  s_bottom_right[0], s_bottom_right[1], 
