@@ -12,7 +12,7 @@ def my_print(*args):
 def clip(s):
     return s[0:8]
 
-SYNC_TIME = 0.4 # secs
+SYNC_TIME = 0.5 # secs
 
 def sync(dataframe, world, vis):
     done = False

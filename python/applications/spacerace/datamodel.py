@@ -1,4 +1,4 @@
-import sys, random, uuid
+import sys, random, uuid, math
 from enum import Enum
 from rtypes import pcc_set
 from rtypes import dimension, primarykey
@@ -173,3 +173,49 @@ class World(object):
     def render(self):
         my_print(" ")
         pass # for now
+
+def check_collision(a, s, delta_t):
+    """ Check collision between a given asteroid a and a given ship s
+    """
+    # Before we do more computation, are they too far to even consider?
+    if math.hypot(s.global_x - a.global_x, s.global_y - a.global_y) > 200:
+        return False
+
+    # Is the asteroid going away from the ship?
+    if ((a.velocity < 0 and a.global_x + World.ASTEROID_WIDTH < s.global_x) or 
+        (a.velocity > 0 and a.global_x > s.global_x + World.SHIP_WIDTH)):
+        return False
+
+    s_top_left = [s.global_x, s.global_y]
+    s_bottom_right = [s.global_x + World.SHIP_WIDTH, s.global_y + World.SHIP_HEIGHT]
+    # Let's enlarge the object relative to its velocity
+    s_top_left[1] += delta_t * s.velocity
+
+    a_top_left = [a.global_x, a.global_y]
+    a_bottom_right = [a.global_x + World.ASTEROID_WIDTH, a.global_y + World.ASTEROID_HEIGHT]
+    # Let's enlarge the object relative to its velocity
+    if a.velocity < 0:
+        a_top_left[0] += delta_t * a.velocity
+    else:
+        a_bottom_right[0] += delta_t * a.velocity
+#                my_print("Ship and asteroid close s: {0}-{1} {2}-{3}   a: {4}-{5} {6}-{7}".format(s_top_left[0], s_top_left[1], 
+#                                                                                                  s_bottom_right[0], s_bottom_right[1], 
+#                                                                                                  a_top_left[0], a_top_left[1], 
+#                                                                                                  a_bottom_right[0], a_bottom_right[1]))
+    if overlap(a_top_left, a_bottom_right, s_top_left, s_bottom_right):
+        s.collision()
+        return True
+
+    return False
+
+def overlap(topleft1, bottomright1, topleft2, bottomright2):
+    """ Returns True if the two rectangles overlap, False otherwise
+    """
+    # If one rectangle is on the left of the other
+    if topleft1[0] > bottomright2[0] or topleft2[0] > bottomright1[0]:
+        return False
+    # If one rectangle is above the other (remember Y runs down)
+    if topleft1[1] > bottomright2[1] or topleft2[1] > bottomright1[1]:
+        return False
+    return True
+

@@ -4,7 +4,7 @@ import operator
 from threading import Thread
 import spacetime
 from spacetime import Application
-from datamodel import Player, World, Ship, Asteroid, ShipState
+from datamodel import Player, World, Ship, Asteroid, ShipState, check_collision
 import pygame
 from pygame.locals import *
 import pygame.freetype
@@ -27,24 +27,21 @@ class SpaceRaceSprite(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = [self.x, self.y]
 
+class AsteroidSprite(SpaceRaceSprite):
+    def __init__(self, go):
+        self.image = pygame.image.load("art/asteroid.png")
+        SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
+
     def move(self, delta, snap):
         # Do we need to snap to world positions?
         if snap:
 #            if abs(self.x - self.game_object.global_x) > 15:
 #                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f} vel={3:.2f}".format(self.game_object.oid, self.x, self.game_object.global_x, self.game_object.velocity))
             self.x, self.y = [self.game_object.global_x, self.game_object.global_y]
-        elif self.x <= World.WORLD_WIDTH and self.x >= 0 and self.y <= World.WORLD_HEIGHT and self.y >= 0:
-            self.move_delta(delta)
+        elif self.x <= World.WORLD_WIDTH and self.x >= 0:
+            self.x += (self.game_object.velocity * delta)
+
         self.rect.left, self.rect.top = [self.x, self.y]
-
-class AsteroidSprite(SpaceRaceSprite):
-    def __init__(self, go):
-        self.image = pygame.image.load("art/asteroid.png")
-        SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
-
-    def move_delta(self, delta):
-        self.x += (self.game_object.velocity * delta)
-        #my_print("x={0:.2f} delta={1:.2f} vel={2:.2f}".format(self.x, delta, self.game_object.velocity))
 
 class ShipSprite(SpaceRaceSprite):
     def __init__(self, go):
@@ -56,6 +53,22 @@ class ShipSprite(SpaceRaceSprite):
             self.images.append(pygame.image.load("art/ship-destroyed-{0}.png".format(i)))
         SpaceRaceSprite.__init__(self, go)  #call Sprite initializer
         my_print("New ship sprite {0}".format(self.game_object.player_id))
+
+    def move(self, delta, snap, asteroids):
+        # Do we need to snap to world positions?
+        if snap:
+#            if abs(self.x - self.game_object.global_x) > 15:
+#                my_print("OOPS, big snap for {0}: local={1:.2f} global={2:.2f} vel={3:.2f}".format(self.game_object.oid, self.x, self.game_object.global_x, self.game_object.velocity))
+            self.x, self.y = [self.game_object.global_x, self.game_object.global_y]
+        elif self.y <= World.WORLD_HEIGHT and self.y >= 0:
+            self.move_delta(delta)
+            # Did we collide?
+            if self.game_object.state != ShipState.DESTROYED:
+                for a in asteroids:
+                    if check_collision(a.game_object, self.game_object, Visualizer.DELTA_TIME+0.02):
+                        break
+
+        self.rect.left, self.rect.top = [self.x, self.y]
 
     def move_delta(self, delta):
         if self.game_object.state != ShipState.DESTROYED:
@@ -145,10 +158,14 @@ class Visualizer(object):
                     if id not in self.ships:
                         self.ships[id] = ShipSprite(go)
 
-            # Move all sprites
+            # Move asteroids
             snap = self.snap
-            for obj in self.asteroids + list(self.ships.values()):
+            for obj in self.asteroids:
                 obj.move(Visualizer.DELTA_TIME, snap)
+                self.screen.blit(obj.image, obj.rect) 
+            # Move ships
+            for obj in list(self.ships.values()):
+                obj.move(Visualizer.DELTA_TIME, snap, self.asteroids)
                 self.screen.blit(obj.image, obj.rect) 
             if self.snap:
                 self.snap = False
