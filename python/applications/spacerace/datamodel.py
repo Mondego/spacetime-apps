@@ -149,7 +149,7 @@ class Asteroid(object):
     
     @merge
     def merge_func(original, yours, theirs):
-        my_print("Conflict! orig={0:.2f}-{1:.2f} yours={0:.2f}-{1:.2f} theirs={0:.2f}-{1:.2f}".format(original.global_x, original.global_y, yours.global_x, yours.global_y, theirs.global_x, theirs.global_y))
+        my_print("Conflict! orig={0:.2f}-{1:.2f} yours={2:.2f}-{3:.2f} theirs={4:.2f}-{5:.2f}".format(original.global_x, original.global_y, yours.global_x, yours.global_y, theirs.global_x, theirs.global_y))
         return theirs
 
 class World(object):

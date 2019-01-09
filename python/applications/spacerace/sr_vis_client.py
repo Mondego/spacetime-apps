@@ -14,15 +14,13 @@ def clip(s):
 
 SYNC_TIME = 0.5 # secs
 
-def sync(dataframe, world, vis):
+def sync(dataframe, world):
     done = False
     while not done:
         start_t = time.perf_counter()
-        dataframe.commit()
-        my_print("Before pulling/checkout")
+        #dataframe.commit() -- not needed
         dataframe.pull()
         dataframe.checkout()
-        my_print("After pulling/checkout")
         # Do we have new ships?
         ships = dataframe.read_all(Ship)
         for s in ships:
@@ -43,7 +41,7 @@ def visualize(dataframe):
         world.asteroids[a.oid] = a
     
     vis = Visualizer(world)
-    threading.Thread(target=sync, args=[dataframe, world, vis]).start()
+    threading.Thread(target=sync, args=[dataframe, world]).start()
     # Run pygame on the main thread or else
     vis.run()
 
