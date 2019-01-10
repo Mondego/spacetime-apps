@@ -6,22 +6,25 @@ from datamodel import Player, Mark
 from visualizer import Visualizer
 
 def my_print(*args):
-	print(*args)
-	sys.stdout.flush()
+    print(*args)
+    sys.stdout.flush()
 
 def clip(s):
-	return s[0:8]
+    return s[0:8]
 
 def visualize(dataframe):
-	vis = Visualizer()
+    vis = Visualizer()
 
-	done = False
-	while dataframe.sync() and not done:
-		time.sleep(0.250)
-		marks = dataframe.read_all(Mark)
-		players = dataframe.read_all(Player)
-		if not vis.update(marks, players):
-			break
+    done = False
+    while not done:
+        time.sleep(0.250)
+
+        dataframe.pull()
+        dataframe.checkout()
+        marks = dataframe.read_all(Mark)
+        players = dataframe.read_all(Player)
+        if not vis.update(marks, players):
+            break
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000

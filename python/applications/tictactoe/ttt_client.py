@@ -10,24 +10,33 @@ def my_print(*args):
 
 
 def player(dataframe, player_class):
+    # Instantiate the player and push it
     my_player = player_class()
     dataframe.add_one(Player, my_player)
     my_print("Player class is %s and player name is: %s" % (my_player.__class__.__name__, my_player.player_name))
+    dataframe.commit()
+    dataframe.push()
 
-    while dataframe.sync() and not my_player.ready:
+    while not my_player.ready:
+        dataframe.pull()
+        dataframe.checkout()
         time.sleep(1)
         my_print("Not ready yet %d" % len(dataframe.read_all(Mark)))
         continue
 
     # Now the game starts
-    done = False
     mark = None
-    while dataframe.sync() and not done:
+    while not my_player.done:
         # Slow down to human perception
         time.sleep(1)
 
+        # Get the data from remote
+        dataframe.pull()
+        dataframe.checkout()
+
         # Check for game over
         if my_player.done:
+            my_print("Done")
             break
 
         # Is it our turn?
@@ -40,21 +49,25 @@ def player(dataframe, player_class):
         if mark != None and mark.rejected:
             my_print("Mark rejected %d, %d" % (mark.x, mark.y))
             my_player.invalid_mark(mark)
-            dataframe.delete_one(Mark, mark)
 
         mark = my_player.create_mark()
         if mark == None:
-            my_print("Can't find a spot!")
-            done = True
+            my_print("Can't find a spot. I'm giving up!")
+            my_player.done = True
             continue
+
         my_print("New mark: %d-%d" % (mark.x, mark.y))
         dataframe.add_one(Mark, mark)
-        my_player.ready = False
 
-        done = my_player.done
-        my_print("Done? %s" % done)
+        # Push the local changes
+        dataframe.commit()
+        dataframe.push()
 
         my_player.board.render()
+
+    # Push whatever last state changes were made 
+    dataframe.commit()
+    dataframe.push()
 
     my_print("GAME OVER")
     my_player.game_over()
