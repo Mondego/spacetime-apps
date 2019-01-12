@@ -1,9 +1,9 @@
-import time
-import sys
+import time, sys, ast
 import spacetime
 from rtypes import pcc_set, dimension, primarykey
 from spacetime import Application
-from datamodel import Player, Mark, Board
+from datamodel import Player, Mark, Board, GameMaster
+from crypto import generate_key, get_public_key, serialize_public_key, decrypt_message
 
 def my_print(*args):
     print(*args)
@@ -11,12 +11,16 @@ def my_print(*args):
 
 WAIT_FOR_START = 5
 
-class Game(object):
+class Game(GameMaster):
     def __init__(self, df):
         self.dataframe = df
         self.board = Board()
         self.current_players = {}
         self.turn = 0
+
+        GameMaster.__init__(self)
+        self.dataframe.add_one(GameMaster, self)
+        self.dataframe.commit()
 
     def wait_for_players(self):
         # Delete the previous players and left over marks
@@ -78,24 +82,36 @@ class Game(object):
                 break
 
             # Take only the valid mark(s)
-            marks = [m for m in marks if not m.rejected]
+            marks = [m for m in marks if not m.rejected and m.player_id == self.turn]
             if (len(marks) > 0):
-                self.board.enforce(marks[0])
+                mark = marks[0]
+                self.decrypt_mark(mark)
+                self.board.enforce(mark)
                 self.board.render()
                 game_over, winner = self.board.check_game_over()
 
                 if game_over:
                     self.stop_game(winner)
-                elif not marks[0].rejected:
-                    self.dataframe.delete_one(Mark, marks[0])
+                else:
+                    self.current_players[self.turn].ready = False
+                    self.turn = (self.turn + 1) % len(self.current_players)
+                    self.current_players[self.turn].ready = True
+                    my_print("It's {0}'s turn".format(self.turn))
 
-                self.current_players[self.turn].ready = False
-                self.turn = (self.turn + 1) % len(self.current_players)
-                self.current_players[self.turn].ready = True
+                    if not mark.rejected: # Hide its x, y again
+                        mark.x, mark.y = [-1, -1]
+                    # else, mark was rejected, which means it can go public
 
                 self.dataframe.commit()
 
             time.sleep(1)
+
+    def decrypt_mark(self, mark):
+        ciphertext_bytes = mark.secret_position
+        pos = decrypt_message(ciphertext_bytes, self.private_key)
+        my_print("position is {0}".format(pos))
+        pos_list = ast.literal_eval(pos)
+        mark.x, mark.y = pos_list
 
     def stop_game(self, winner):
         for player in self.current_players:
@@ -115,7 +131,7 @@ def ttt_server(dataframe):
 
 
 def main(port):
-    server = Application(ttt_server, server_port=port, Types=[Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    server = Application(ttt_server, server_port=port, Types=[GameMaster, Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
     server.start()
 
 if __name__ == "__main__":

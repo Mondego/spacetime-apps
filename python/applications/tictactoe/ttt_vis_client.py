@@ -21,7 +21,7 @@ def visualize(dataframe):
 
         dataframe.pull()
         dataframe.checkout()
-        marks = dataframe.read_all(Mark)
+        marks = [m for m in dataframe.read_all(Mark) if m.x > 0 and m.y > 0]
         players = dataframe.read_all(Player)
         if not vis.update(marks, players):
             break

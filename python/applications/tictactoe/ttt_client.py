@@ -2,7 +2,7 @@ import sys
 import time, random, argparse
 import spacetime
 from spacetime import Application
-from datamodel import Player, Mark
+from datamodel import Player, Mark, GameMaster
 
 def my_print(*args):
 	print(*args)
@@ -10,8 +10,15 @@ def my_print(*args):
 
 
 def player(dataframe, player_class):
+    # Get the game master
+    dataframe.pull(); dataframe.checkout()
+    game_masters = dataframe.read_all(GameMaster)
+    if len(game_masters) == 0:
+        my_print("Game master not found! Can't play")
+        return
+
     # Instantiate the player and push it
-    my_player = player_class()
+    my_player = player_class(game_masters[0])
     dataframe.add_one(Player, my_player)
     my_print("Player class is %s and player name is: %s" % (my_player.__class__.__name__, my_player.player_name))
     dataframe.commit()
@@ -57,7 +64,10 @@ def player(dataframe, player_class):
             continue
 
         my_print("New mark: %d-%d" % (mark.x, mark.y))
+        # Hide the info before commiting
+        mark.hide(my_player.game_master.public_key)
         dataframe.add_one(Mark, mark)
+        my_player.ready = False
 
         # Push the local changes
         dataframe.commit()
@@ -89,7 +99,7 @@ def main():
 
     my_print("%s %s %s" % (args.host, args.port, args.player))
 
-    player_client = Application(player, dataframe=(args.host, args.port), Types=[Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    player_client = Application(player, dataframe=(args.host, args.port), Types=[GameMaster, Player, Mark], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
     player_client.start(get_class(args.player))
 
 if __name__ == "__main__":

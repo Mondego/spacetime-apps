@@ -34,7 +34,7 @@ class MarkSprite(pygame.sprite.Sprite):
         x = mark.y * 512/3 + 42
         y = mark.x * 512/3 + 42
         self.is_bad = False
-        self.oid = mark.oid
+        self.mark = mark
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = [x,y]
 
@@ -131,15 +131,15 @@ class Visualizer(object):
         repeated = []
         for m1 in self.marks:
             for m2 in marks:
-                if m1.oid == m2.oid:
+                if m1.mark == m2:
                     repeated.append(m2)
         for m in marks:
             if m not in repeated:
                 self.marks.append(MarkSprite(m))
-                my_print("New Mark %d %d-%d %s (total: %d)" % (m.player_id, m.x, m.y, m.oid, len(self.marks)))
+                my_print("New Mark %d %d-%d (total: %d)" % (m.player_id, m.x, m.y, len(self.marks)))
             else: # did it change state to rejected?
                 if m.rejected:
-                    mark = next((x for x in self.marks if x.oid == m.oid), None)
+                    mark = next((x for x in self.marks if x.mark == m), None)
                     if mark != None and not mark.is_bad:
                         mark.change_to_bad()
 
