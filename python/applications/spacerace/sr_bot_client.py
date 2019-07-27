@@ -1,7 +1,7 @@
 import sys
 import time, argparse
 import spacetime
-from spacetime import Application
+from spacetime import Node
 from datamodel import Player, Asteroid, Ship, World
 
 def my_print(*args):
@@ -66,7 +66,7 @@ def main():
 
     my_print("%s %s %s" % (args.host, args.port, args.player))
 
-    player_client = Application(bot_driver, dataframe=(args.host, args.port), Types=[Player, Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    player_client = Node(bot_driver, dataframe=(args.host, args.port), Types=[Player, Asteroid, Ship])
     player_client.start(get_class(args.player))
 
 if __name__ == "__main__":

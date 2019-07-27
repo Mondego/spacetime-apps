@@ -19,3 +19,5 @@
 *.js
 python/applications/mobdat/networks/fullnet/net/*
 python/stats
+*.vscode/
+*.code-workspace

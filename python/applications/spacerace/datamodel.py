@@ -32,7 +32,7 @@ class Player(object):
 
         self.world = World()
         self.dataframe = dataframe
-    
+
     def init_world(self):
         for a in self.dataframe.read_all(Asteroid):
             self.world.asteroids[a.oid] = a
@@ -146,7 +146,7 @@ class Asteroid(object):
         speed = float(random.randint(World.ASTEROID_MIN_SPEED, World.ASTEROID_MAX_SPEED))
         vel = speed if x == 0 else speed * -1
         return x, y, vel
-    
+
     @merge
     def merge_func(original, yours, theirs):
         my_print("Conflict! orig={0:.2f}-{1:.2f} yours={2:.2f}-{3:.2f} theirs={4:.2f}-{5:.2f}".format(original.global_x, original.global_y, yours.global_x, yours.global_y, theirs.global_x, theirs.global_y))
@@ -187,7 +187,7 @@ def check_collision(a, s, delta_t):
         return False
 
     # Is the asteroid going away from the ship?
-    if ((a.velocity < 0 and a.global_x + World.ASTEROID_WIDTH < s.global_x) or 
+    if ((a.velocity < 0 and a.global_x + World.ASTEROID_WIDTH < s.global_x) or
         (a.velocity > 0 and a.global_x > s.global_x + World.SHIP_WIDTH)):
         return False
 
@@ -203,9 +203,9 @@ def check_collision(a, s, delta_t):
         a_top_left[0] += delta_t * a.velocity
     else:
         a_bottom_right[0] += delta_t * a.velocity
-#                my_print("Ship and asteroid close s: {0}-{1} {2}-{3}   a: {4}-{5} {6}-{7}".format(s_top_left[0], s_top_left[1], 
-#                                                                                                  s_bottom_right[0], s_bottom_right[1], 
-#                                                                                                  a_top_left[0], a_top_left[1], 
+#                my_print("Ship and asteroid close s: {0}-{1} {2}-{3}   a: {4}-{5} {6}-{7}".format(s_top_left[0], s_top_left[1],
+#                                                                                                  s_bottom_right[0], s_bottom_right[1],
+#                                                                                                  a_top_left[0], a_top_left[1],
 #                                                                                                  a_bottom_right[0], a_bottom_right[1]))
     if overlap(a_top_left, a_bottom_right, s_top_left, s_bottom_right):
         s.collision()

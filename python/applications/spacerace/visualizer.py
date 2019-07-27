@@ -3,7 +3,6 @@ import time
 import operator
 from threading import Thread
 import spacetime
-from spacetime import Application
 from datamodel import Player, World, Ship, Asteroid, ShipState, check_collision
 import pygame
 from pygame.locals import *

@@ -2,7 +2,7 @@ import time
 import sys, random, math
 import spacetime
 from rtypes import pcc_set, dimension, primarykey
-from spacetime import Application
+from spacetime import Node
 from datamodel import Player, Ship, Asteroid, World, ShipState, check_collision
 
 def my_print(*args):
@@ -89,7 +89,8 @@ class Game(object):
             ticks += 1
             elapsed_t = time.perf_counter() - start_t
             #my_print("Sleeping for %f" % (Game.DELTA_TIME - elapsed_t))
-            time.sleep(Game.DELTA_TIME - elapsed_t)
+            if Game.DELTA_TIME - elapsed_t > 0:
+                time.sleep(Game.DELTA_TIME - elapsed_t)
 
     def move_asteroids(self):
         for a in self.dataframe.read_all(Asteroid):
@@ -118,7 +119,7 @@ class Game(object):
 
 
 def sr_server(dataframe):
-    my_print ("READY FOR NEW GAME")
+    my_print("READY FOR NEW GAME")
     game = Game(dataframe)
     while True: #game.wait_for_players():
         game.play()
@@ -127,9 +128,8 @@ def sr_server(dataframe):
 
 
 def main(port):
-    server = Application(sr_server, server_port=port, 
-                         Types=[Player, Ship, Asteroid], 
-                         version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    server = Node(sr_server, server_port=port,
+                         Types=[Player, Ship, Asteroid])
     server.start()
 
 if __name__ == "__main__":

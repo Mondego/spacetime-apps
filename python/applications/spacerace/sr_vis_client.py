@@ -1,7 +1,7 @@
 import sys
 import time, argparse, threading
 import spacetime
-from spacetime import Application
+from spacetime import Node
 from datamodel import Player, Asteroid, World, Ship
 from visualizer import Visualizer
 
@@ -54,7 +54,7 @@ def main():
 
     my_print("%s %s" % (args.host, args.port))
 
-    player_client = Application(visualize, dataframe=(args.host, args.port), Types=[Asteroid, Ship], version_by=spacetime.utils.enums.VersionBy.FULLSTATE)
+    player_client = Node(visualize, dataframe=(args.host, args.port), Types=[Asteroid, Ship])
     player_client.start()
 
 if __name__ == "__main__":
